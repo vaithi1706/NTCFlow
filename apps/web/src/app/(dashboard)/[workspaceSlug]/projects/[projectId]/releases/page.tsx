@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { AiReleaseNotesDialog } from "@/components/ai/ai-release-notes-dialog";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   unreleased: { label: "Unreleased", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", icon: Package },
@@ -38,6 +39,7 @@ export default function ReleasesPage() {
   const projectId = params.projectId as string;
   const workspaceSlug = params.workspaceSlug as string;
 
+  const { workspaceId } = useAuthStore();
   const [createOpen, setCreateOpen] = useState(false);
   const [releaseConfirmId, setReleaseConfirmId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -268,6 +270,11 @@ export default function ReleasesPage() {
                 <Badge variant="outline" className={`mt-2 ${statusConfig[versionDetail.status]?.color}`}>
                   {statusConfig[versionDetail.status]?.label}
                 </Badge>
+                <div className="mt-3">
+                  {workspaceId && (
+                    <AiReleaseNotesDialog versionId={versionDetail.id} workspaceId={workspaceId} />
+                  )}
+                </div>
               </div>
               <Separator />
               <div>

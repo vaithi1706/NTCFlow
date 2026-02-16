@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Settings, LogOut, Sun, Moon, Monitor, UserPlus, MessageSquare, AtSign, Clock, BellOff } from "lucide-react";
 import { trpc } from "@/lib/api/trpc";
+import { AiSearch } from "@/components/ai/ai-search";
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from "date-fns";
 
 interface TopBarProps {
@@ -92,7 +93,7 @@ export function TopBar({
   breadcrumbs = [], showViewSwitcher, showFilter, currentView = "board", onViewChange, onFilterClick, filterActive,
 }: TopBarProps) {
   const { setCommandPaletteOpen } = useUIStore();
-  const { user, logout } = useAuthStore();
+  const { user, logout, workspaceId } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [notifOpen, setNotifOpen] = useState(false);
@@ -207,6 +208,8 @@ export function TopBar({
           </TooltipTrigger>
           <TooltipContent>Search (⌘K)</TooltipContent>
         </Tooltip>
+
+        {workspaceId && <AiSearch workspaceId={workspaceId} />}
 
         {/* Notification Bell with Grouped Dropdown */}
         <Popover open={notifOpen} onOpenChange={setNotifOpen}>

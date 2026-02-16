@@ -29,6 +29,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AiTaskHelper } from "@/components/ai/ai-task-helper";
+import { AiBreakdownDialog } from "@/components/ai/ai-breakdown-dialog";
+import { AiEstimateButton } from "@/components/ai/ai-estimate-button";
 import { TaskLinks } from "@/components/tasks/task-links";
 import { TaskWatchers } from "@/components/tasks/task-watchers";
 import { trpc, trpcVanilla } from "@/lib/api/trpc";
@@ -382,6 +384,13 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
                     }
                   }}
                 />
+                <AiBreakdownDialog
+                  taskId={task.id}
+                  taskTitle={title}
+                  taskDescription={task.description || ""}
+                  projectId={task.projectId}
+                  onCreated={() => utils.task.getById.invalidate({ id: task.id })}
+                />
                 <TaskWatchers taskId={task.id} workspaceId={workspaceId} />
               </div>
             </div>
@@ -468,6 +477,12 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
                     ✕
                   </button>
                 )}
+                <AiEstimateButton
+                  taskTitle={title}
+                  taskDescription={task.description || ""}
+                  projectId={task.projectId}
+                  onApply={(pts) => updateMutation.mutate({ id: task.id, storyPoints: pts })}
+                />
               </div>
             </div>
             <div>

@@ -24,6 +24,8 @@ import {
   ArrowUpRight, Clock, ChevronRight,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AiAnomalyAlerts } from "@/components/ai/ai-anomaly-alerts";
+import { AiWeeklyDigest } from "@/components/ai/ai-weekly-digest";
 
 function getStarredProjects(): string[] {
   if (typeof window === "undefined") return [];
@@ -256,6 +258,19 @@ export default function HomePage() {
               ))}
             </div>
           </section>
+
+          {/* AI Insights + Weekly Digest */}
+          {workspaceId && (
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2">
+                <AiAnomalyAlerts workspaceId={workspaceId} />
+              </div>
+              <div className="flex flex-col gap-3 justify-center items-center p-4 rounded-xl border border-border/50 bg-gradient-to-br from-violet-500/[0.03] to-purple-500/[0.03]">
+                <p className="text-sm text-muted-foreground text-center">Generate a weekly digest for your team</p>
+                <AiWeeklyDigest workspaceId={workspaceId} />
+              </div>
+            </section>
+          )}
 
           {/* Recent Projects */}
           <section>

@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, GripVertical, Loader2, X, Check, UserPlus, Upload, Zap, Globe, LayoutList, GitBranch, Mail, Copy, ExternalLink } from "lucide-react";
+import { AiAutomationSuggestions } from "@/components/ai/ai-automation-suggestions";
 import { WorkflowEditor } from "@/components/projects/workflow-editor";
 import { toast } from "sonner";
 import { trpc } from "@/lib/api/trpc";
@@ -492,7 +493,10 @@ function AutomationsCard({ projectId }: { projectId: string }) {
           <CardTitle className="flex items-center gap-2"><Zap className="h-4 w-4" />Automations</CardTitle>
           <CardDescription>Automate repetitive actions</CardDescription>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-1" />Add Rule</Button>
+        <div className="flex items-center gap-2">
+          <AiAutomationSuggestions projectId={projectId} />
+          <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-1" />Add Rule</Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { Plus, MoreHorizontal, Trash2 } from "lucide-react";
+import { AiDuplicateWarning } from "@/components/ai/ai-duplicate-warning";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -193,7 +194,7 @@ export function BoardColumn({ column, tasks, project, onTaskClick, onTaskCreate,
 
             {/* Quick add */}
             {adding && (
-              <div className="px-0.5">
+              <div className="px-0.5 space-y-1">
                 <Input
                   ref={inputRef}
                   placeholder="Task title..."
@@ -203,6 +204,9 @@ export function BoardColumn({ column, tasks, project, onTaskClick, onTaskCreate,
                   onBlur={handleAdd}
                   className="text-sm"
                 />
+                {project && newTitle.length >= 5 && (
+                  <AiDuplicateWarning title={newTitle} projectId={project.id} />
+                )}
               </div>
             )}
           </div>

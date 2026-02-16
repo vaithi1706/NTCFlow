@@ -21,6 +21,8 @@ import {
   GripVertical,
   Loader2,
 } from "lucide-react";
+import { AiSprintPlan } from "@/components/ai/ai-sprint-plan";
+import { AiMeetingNotes } from "@/components/ai/ai-meeting-notes";
 import { format } from "date-fns";
 
 export default function BacklogPage() {
@@ -185,6 +187,18 @@ export default function BacklogPage() {
             className="max-w-xs h-8 text-sm"
           />
           <div className="flex-1" />
+          <AiMeetingNotes projectId={projectId} />
+          <AiSprintPlan
+            projectId={projectId}
+            backlogTasks={(backlogTasks || []).map((t: any) => ({ id: t.id, title: t.title, priority: t.priority, storyPoints: t.storyPoints }))}
+            activeSprintId={activeSprint?.id}
+            onAddToSprint={(taskIds) => {
+              if (!activeSprint) return;
+              for (const taskId of taskIds) {
+                addToSprintMutation.mutate({ taskId, sprintId: activeSprint.id });
+              }
+            }}
+          />
           <span className="text-xs text-muted-foreground">
             Backlog: {backlogTasks?.length || 0} tasks · {backlogPts} pts
           </span>
