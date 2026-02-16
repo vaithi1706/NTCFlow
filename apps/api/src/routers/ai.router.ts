@@ -1050,7 +1050,8 @@ export const aiRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "File not found" });
       }
 
-      const workbook = XLSX.readFile(filePath);
+      const fileBuffer = fs.readFileSync(filePath);
+      const workbook = XLSX.read(fileBuffer);
       const sheetName = workbook.SheetNames[0];
       if (!sheetName) throw new TRPCError({ code: "BAD_REQUEST", message: "Empty spreadsheet" });
 
@@ -1121,14 +1122,14 @@ export const aiRouter = router({
         // Find or create labels
         const labelIds: string[] = [];
         for (const labelName of t.labels) {
-          if (!labelName.trim()) continue;
+          if (!labelName?.trim()) continue;
           let label = await ctx.prisma.label.findFirst({
-            where: { workspaceId: wsId, name: { equals: labelName, mode: "insensitive" } },
+            where: { projectId: input.projectId, name: { equals: labelName.trim(), mode: "insensitive" } },
           });
           if (!label) {
             const colors = ["#8B5CF6", "#EC4899", "#F59E0B", "#10B981", "#3B82F6", "#EF4444"];
             label = await ctx.prisma.label.create({
-              data: { workspaceId: wsId, name: labelName.trim(), color: colors[Math.floor(Math.random() * colors.length)]! },
+              data: { projectId: input.projectId, name: labelName.trim(), color: colors[Math.floor(Math.random() * colors.length)]! },
             });
           }
           labelIds.push(label.id);
