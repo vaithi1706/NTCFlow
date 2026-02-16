@@ -62,7 +62,7 @@ export function AiBreakdownDialog({ taskId, taskTitle, taskDescription, projectI
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[85vh] flex flex-col max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-violet-500" />

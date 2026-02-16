@@ -60,7 +60,7 @@ export function AiSprintPlan({ projectId, backlogTasks, activeSprintId, onAddToS
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20">
@@ -77,7 +77,7 @@ export function AiSprintPlan({ projectId, backlogTasks, activeSprintId, onAddToS
               <p className="text-sm text-muted-foreground">Analyzing backlog...</p>
             </div>
           ) : mutation.data ? (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-1 min-h-0 pr-1">
               {/* Stats */}
               <div className="flex gap-3">
                 <div className="flex-1 p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">

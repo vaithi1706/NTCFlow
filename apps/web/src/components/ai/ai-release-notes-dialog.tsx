@@ -50,7 +50,7 @@ export function AiReleaseNotesDialog({ versionId, taskIds, workspaceId }: AiRele
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-h-[85vh] flex flex-col max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-violet-500" />

@@ -45,7 +45,7 @@ export function AiAutomationSuggestions({ projectId }: AiAutomationSuggestionsPr
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[85vh] flex flex-col max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20">
