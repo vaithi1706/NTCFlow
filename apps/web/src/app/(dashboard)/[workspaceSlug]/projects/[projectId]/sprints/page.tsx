@@ -19,6 +19,8 @@ import { useProjectData } from "@/hooks/use-project-data";
 import { toast } from "sonner";
 import { Plus, Play, CheckCircle2, Loader2, Zap, Calendar, Target, ChevronDown, ChevronUp, X } from "lucide-react";
 import { PdfExportButton } from "@/components/shared/pdf-export-button";
+import { AiRiskPredictor } from "@/components/ai/ai-risk-predictor";
+import { AiStandup } from "@/components/ai/ai-standup";
 import { format } from "date-fns";
 
 function SprintStatusBadge({ sprint }: { sprint: any }) {
@@ -113,6 +115,12 @@ export default function SprintsPage() {
             <PdfExportButton targetId="sprints-content" filename="sprints-report" />
             <Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-2" />New Sprint</Button>
           </div>
+        </div>
+
+        {/* AI Widgets */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <AiRiskPredictor projectId={projectId} />
+          <AiStandup projectId={projectId} />
         </div>
 
         {isLoading ? (

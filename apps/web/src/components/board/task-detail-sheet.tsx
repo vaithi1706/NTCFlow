@@ -31,6 +31,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AiTaskHelper } from "@/components/ai/ai-task-helper";
 import { AiBreakdownDialog } from "@/components/ai/ai-breakdown-dialog";
 import { AiEstimateButton } from "@/components/ai/ai-estimate-button";
+import { AiAutoTriage } from "@/components/ai/ai-auto-triage";
 import { TaskLinks } from "@/components/tasks/task-links";
 import { TaskWatchers } from "@/components/tasks/task-watchers";
 import { trpc, trpcVanilla } from "@/lib/api/trpc";
@@ -616,6 +617,11 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
         </div>
 
         <Separator className="my-4" />
+
+        {/* AI Auto-Triage */}
+        <div className="px-6 mb-2">
+          <AiAutoTriage taskId={task.id} projectId={task.projectId} onApplied={() => onUpdated?.()} />
+        </div>
 
         {/* Content tabs */}
         <Tabs defaultValue="details" className="px-6 pb-6">

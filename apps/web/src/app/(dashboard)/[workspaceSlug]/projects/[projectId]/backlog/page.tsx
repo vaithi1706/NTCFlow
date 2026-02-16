@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { AiSprintPlan } from "@/components/ai/ai-sprint-plan";
 import { AiMeetingNotes } from "@/components/ai/ai-meeting-notes";
+import { AiExcelImport } from "@/components/ai/ai-excel-import";
 import { format } from "date-fns";
 
 export default function BacklogPage() {
@@ -187,6 +188,7 @@ export default function BacklogPage() {
             className="max-w-xs h-8 text-sm"
           />
           <div className="flex-1" />
+          <AiExcelImport projectId={projectId} onComplete={() => utils.task.getBacklog.invalidate({ projectId })} />
           <AiMeetingNotes projectId={projectId} />
           <AiSprintPlan
             projectId={projectId}

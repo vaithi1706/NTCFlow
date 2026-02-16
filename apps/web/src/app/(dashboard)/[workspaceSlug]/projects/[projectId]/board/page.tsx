@@ -13,6 +13,7 @@ import { useSocket } from "@/hooks/use-socket";
 import { BulkActionBar } from "@/components/shared/bulk-action-bar";
 import { useAuthStore } from "@/stores/auth-store";
 import { isToday, isThisWeek, isPast } from "date-fns";
+import { AiExcelImport } from "@/components/ai/ai-excel-import";
 
 const emptyFilters: Filters = { priority: [], assignee: [], label: [], taskType: [], dueDate: null };
 
@@ -134,6 +135,9 @@ export default function BoardPage() {
           />
         </div>
       )}
+      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border/50">
+        <AiExcelImport projectId={projectId} onComplete={() => refetchBoard()} />
+      </div>
       {isLoading ? (
         <BoardSkeleton />
       ) : (

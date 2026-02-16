@@ -18,11 +18,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "next-themes";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Settings, LogOut, Sun, Moon, Monitor, UserPlus, MessageSquare, AtSign, Clock, BellOff } from "lucide-react";
 import { trpc } from "@/lib/api/trpc";
 import { AiSearch } from "@/components/ai/ai-search";
+import { AiChatPanel } from "@/components/ai/ai-chat-panel";
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from "date-fns";
 
 interface TopBarProps {
@@ -33,6 +34,7 @@ interface TopBarProps {
   onViewChange?: (view: string) => void;
   onFilterClick?: () => void;
   filterActive?: boolean;
+  projectId?: string;
 }
 
 const views = [
@@ -90,12 +92,14 @@ function groupByDate(notifications: any[]) {
 }
 
 export function TopBar({
-  breadcrumbs = [], showViewSwitcher, showFilter, currentView = "board", onViewChange, onFilterClick, filterActive,
+  breadcrumbs = [], showViewSwitcher, showFilter, currentView = "board", onViewChange, onFilterClick, filterActive, projectId,
 }: TopBarProps) {
   const { setCommandPaletteOpen } = useUIStore();
   const { user, logout, workspaceId } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const routeParams = useParams();
+  const resolvedProjectId = projectId || (routeParams?.projectId as string | undefined);
   const [notifOpen, setNotifOpen] = useState(false);
 
   const utils = trpc.useUtils();
@@ -210,6 +214,7 @@ export function TopBar({
         </Tooltip>
 
         {workspaceId && <AiSearch workspaceId={workspaceId} />}
+        {workspaceId && <AiChatPanel projectId={resolvedProjectId} workspaceId={workspaceId} />}
 
         {/* Notification Bell with Grouped Dropdown */}
         <Popover open={notifOpen} onOpenChange={setNotifOpen}>

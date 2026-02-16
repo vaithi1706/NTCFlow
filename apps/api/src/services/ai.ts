@@ -2,6 +2,44 @@ const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_MODEL = "meta/llama-3.3-70b-instruct";
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
+async function callNvidiaWithSystem(systemPrompt: string, userMessage: string, maxTokens = 2000): Promise<string> {
+  if (!NVIDIA_API_KEY) throw new Error("No NVIDIA_API_KEY configured.");
+  const res = await fetch(NVIDIA_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${NVIDIA_API_KEY}` },
+    body: JSON.stringify({
+      model: NVIDIA_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      temperature: 0.7,
+      max_tokens: maxTokens,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`NVIDIA API error ${res.status}: ${err}`);
+  }
+  const data: any = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+async function callNvidiaWithMessages(messages: Array<{ role: string; content: string }>, maxTokens = 2000): Promise<string> {
+  if (!NVIDIA_API_KEY) throw new Error("No NVIDIA_API_KEY configured.");
+  const res = await fetch(NVIDIA_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${NVIDIA_API_KEY}` },
+    body: JSON.stringify({ model: NVIDIA_MODEL, messages, temperature: 0.7, max_tokens: maxTokens }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`NVIDIA API error ${res.status}: ${err}`);
+  }
+  const data: any = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
 async function callNvidia(prompt: string, maxTokens = 2000): Promise<string> {
   if (!NVIDIA_API_KEY) throw new Error("No NVIDIA_API_KEY configured.");
   const res = await fetch(NVIDIA_URL, {
@@ -434,6 +472,289 @@ ${taskList}`);
       suggestedTasks: suggested,
       estimatedCapacity,
       reasoning: `Selected ${suggested.length} highest-priority tasks for team of ${teamSize} over ${sprintDuration} days (~${estimatedCapacity}pts capacity).`,
+    };
+  }
+}
+
+// --- V3 Feature 1: AI Chat (Project Manager) ---
+export async function aiChat(
+  message: string,
+  context: {
+    projectName: string;
+    columns: Array<{ id: string; name: string }>;
+    members: Array<{ id: string; name: string; email: string }>;
+    recentTasks: Array<{ id: string; title: string; status: string; assignee: string | null; priority: string; taskNumber: number }>;
+  },
+  conversationHistory?: Array<{ role: string; content: string }>
+): Promise<{ response: string; actions: Array<{ type: string; params: any }> }> {
+  const systemPrompt = `You are DKFlow AI — an intelligent project management assistant. You are helpful, concise, and action-oriented.
+
+CAPABILITIES:
+- Create tasks (with title, description, priority, assignee)
+- Move tasks between columns/statuses
+- Assign tasks to team members
+- Update task priorities
+- Create sprints
+- Add comments to tasks
+- Analyze project status and provide insights
+
+Available actions in JSON response:
+- create_task: { title, description?, priority?, assigneeEmail? }
+- move_task: { taskId, columnName }
+- assign_task: { taskId, userNameOrEmail }
+- update_priority: { taskId, priority } (urgent|high|medium|low|none)
+- create_sprint: { name, startDate, endDate, goal? }
+- comment: { taskId, content }
+
+CONTEXT:
+Project: ${context.projectName}
+Board columns: ${context.columns.map(c => `"${c.name}" (id:${c.id})`).join(", ")}
+Team: ${context.members.map(m => `${m.name} <${m.email}> (id:${m.id})`).join(", ")}
+Recent Tasks:
+${context.recentTasks.slice(0, 30).map(t => `- DK-${t.taskNumber} "${t.title}" [${t.status}] priority:${t.priority} assignee:${t.assignee || "unassigned"} (id:${t.id})`).join("\n")}
+
+RULES:
+1. Be conversational and friendly, but professional
+2. When the user asks you to do something, DO IT — don't just explain how
+3. Use the team member names/IDs from context to assign tasks
+4. When creating tasks, always set a priority based on context
+5. Format your responses with markdown for readability (bold, lists, headers, code blocks)
+6. When asked about status, analyze the actual task data
+7. Be proactive — suggest next steps after completing an action
+8. If you can't find a specific task/person, say so clearly
+
+RESPONSE FORMAT:
+You MUST respond ONLY with valid JSON:
+{ "response": "your message in markdown", "actions": [{ "type": "action_type", "params": {...} }] }
+If no actions needed, return empty actions array.`;
+
+  const messages: Array<{ role: string; content: string }> = [
+    { role: "system", content: systemPrompt },
+  ];
+
+  // Add conversation history for continuity
+  if (conversationHistory && conversationHistory.length > 0) {
+    for (const msg of conversationHistory.slice(-10)) {
+      messages.push({ role: msg.role, content: msg.content });
+    }
+  }
+
+  messages.push({ role: "user", content: message });
+
+  const raw = await callNvidiaWithMessages(messages, 3000);
+  const cleaned = raw.replace(/```json\n?|\n?```/g, "").trim();
+  const jsonMatch = cleaned.match(/[\{][\s\S]*[\}]/);
+  if (!jsonMatch) return { response: raw, actions: [] };
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      response: parsed.response || raw,
+      actions: Array.isArray(parsed.actions) ? parsed.actions : [],
+    };
+  } catch {
+    return { response: raw, actions: [] };
+  }
+}
+
+// --- AI Chat: Generate session title ---
+export async function generateSessionTitle(message: string): Promise<string> {
+  try {
+    const result = await callNvidia(`Generate a very short title (3-6 words max) for a chat conversation that starts with this message. Return ONLY the title text, nothing else.\n\nMessage: "${message}"`, 50);
+    return result.trim().replace(/^["']|["']$/g, "").slice(0, 100) || "New Chat";
+  } catch {
+    return message.slice(0, 50) + (message.length > 50 ? "..." : "");
+  }
+}
+
+// --- V3 Feature 2: Auto-Triage ---
+export async function autoTriageTask(
+  task: { title: string; description: string | null },
+  projectLabels: string[],
+  members: Array<{ id: string; name: string; recentTaskTypes: string[] }>
+): Promise<{ priority: string; taskType: string; labels: string[]; suggestedAssignee: { userId: string; name: string; reason: string } | null }> {
+  const prompt = `Analyze this task and suggest categorization.
+
+Task title: "${task.title}"
+Task description: "${task.description || "No description"}"
+
+Available labels in project: ${projectLabels.length > 0 ? projectLabels.join(", ") : "none"}
+Team members and their expertise:
+${members.map(m => `- ${m.name} (id:${m.id}): works on ${m.recentTaskTypes.join(", ") || "various"}`).join("\n")}
+
+Return JSON: { "priority": "urgent"|"high"|"medium"|"low", "taskType": "bug"|"feature"|"story"|"task"|"epic", "labels": ["label1"], "suggestedAssignee": { "userId": "id", "name": "name", "reason": "brief reason" } or null }
+
+Only suggest labels from the available list. Suggest assignee based on expertise match.`;
+
+  try {
+    return await generateJSON(prompt);
+  } catch {
+    return { priority: "medium", taskType: "task", labels: [], suggestedAssignee: null };
+  }
+}
+
+// --- V3 Feature 3: Sprint Risk Predictor ---
+export async function predictSprintRisk(metrics: {
+  sprintName: string;
+  totalTasks: number;
+  completedTasks: number;
+  remainingTasks: number;
+  totalPoints: number;
+  completedPoints: number;
+  daysElapsed: number;
+  daysRemaining: number;
+  dailyCompletionRate: number;
+  historicalVelocity: number;
+}): Promise<{ riskLevel: string; completionProbability: number; predictedEndDate: string; insights: string[]; recommendations: string[] }> {
+  const prompt = `Analyze sprint risk based on these metrics:
+
+Sprint: "${metrics.sprintName}"
+Tasks: ${metrics.completedTasks}/${metrics.totalTasks} completed (${metrics.remainingTasks} remaining)
+Story points: ${metrics.completedPoints}/${metrics.totalPoints}
+Time: ${metrics.daysElapsed} days elapsed, ${metrics.daysRemaining} days remaining
+Daily completion rate: ${metrics.dailyCompletionRate.toFixed(1)} tasks/day
+Historical velocity: ${metrics.historicalVelocity} points/sprint
+
+Return JSON: { "riskLevel": "low"|"medium"|"high"|"critical", "completionProbability": number 0-100, "predictedEndDate": "YYYY-MM-DD", "insights": ["insight1", "insight2", "insight3"], "recommendations": ["rec1", "rec2", "rec3"] }`;
+
+  try {
+    return await generateJSON(prompt);
+  } catch {
+    const projectedCompletion = metrics.dailyCompletionRate > 0 ? metrics.remainingTasks / metrics.dailyCompletionRate : Infinity;
+    const onTrack = projectedCompletion <= metrics.daysRemaining;
+    return {
+      riskLevel: onTrack ? "low" : projectedCompletion <= metrics.daysRemaining * 1.5 ? "medium" : "high",
+      completionProbability: onTrack ? 80 : 40,
+      predictedEndDate: new Date(Date.now() + projectedCompletion * 86400000).toISOString().split("T")[0]!,
+      insights: [`${metrics.remainingTasks} tasks remaining with ${metrics.daysRemaining} days left`],
+      recommendations: ["Review and re-prioritize remaining tasks"],
+    };
+  }
+}
+
+// --- V3 Feature 4: Standup Report ---
+export async function generateStandupReport(
+  members: Array<{
+    userId: string;
+    name: string;
+    completedYesterday: string[];
+    inProgressToday: string[];
+    blockers: string[];
+  }>
+): Promise<{ standups: Array<{ userId: string; name: string; yesterday: string[]; today: string[]; blockers: string[] }>; teamSummary: string }> {
+  const prompt = `Generate a standup report for each team member and a team summary.
+
+Team activity data:
+${members.map(m => `
+${m.name} (id:${m.userId}):
+  Yesterday completed: ${m.completedYesterday.length > 0 ? m.completedYesterday.join("; ") : "nothing tracked"}
+  In progress today: ${m.inProgressToday.length > 0 ? m.inProgressToday.join("; ") : "nothing tracked"}
+  Potential blockers: ${m.blockers.length > 0 ? m.blockers.join("; ") : "none"}
+`).join("")}
+
+Return JSON: { "standups": [{ "userId": "id", "name": "name", "yesterday": ["done item"], "today": ["planned item"], "blockers": ["blocker"] }], "teamSummary": "Brief 2-3 sentence team summary with overall status" }
+
+Keep items concise. If no data, say "No tracked activity".`;
+
+  try {
+    return await generateJSON(prompt);
+  } catch {
+    return {
+      standups: members.map(m => ({
+        userId: m.userId,
+        name: m.name,
+        yesterday: m.completedYesterday.length > 0 ? m.completedYesterday : ["No tracked activity"],
+        today: m.inProgressToday.length > 0 ? m.inProgressToday : ["No tracked activity"],
+        blockers: m.blockers,
+      })),
+      teamSummary: `Team of ${members.length} members. ${members.filter(m => m.blockers.length > 0).length} members have blockers.`,
+    };
+  }
+}
+
+// --- V3 Feature 5: Project Health Score ---
+export async function calculateHealthScore(metrics: {
+  velocityTrend: string;
+  overduePercentage: number;
+  bugRatio: number;
+  teamBalanceStdDev: number;
+  completionRate: number;
+  sprintProgress: number;
+}): Promise<{ score: number; grade: string; assessment: string; suggestions: string[] }> {
+  // Calculate score
+  let score = 100;
+  // Overdue penalty (0-30 points)
+  score -= Math.min(30, metrics.overduePercentage * 100);
+  // Bug ratio penalty (0-15 points)
+  score -= Math.min(15, metrics.bugRatio * 50);
+  // Team balance penalty (0-15 points)
+  score -= Math.min(15, metrics.teamBalanceStdDev * 3);
+  // Completion rate bonus/penalty (0-20 points)
+  score -= Math.max(0, (1 - metrics.completionRate) * 20);
+  // Velocity trend
+  if (metrics.velocityTrend === "declining") score -= 10;
+  else if (metrics.velocityTrend === "improving") score += 5;
+  // Sprint progress
+  score -= Math.max(0, (1 - metrics.sprintProgress) * 10);
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : "F";
+
+  const prompt = `Given these project health metrics, provide a brief assessment and suggestions.
+
+Score: ${score}/100 (${grade})
+Velocity trend: ${metrics.velocityTrend}
+Overdue tasks: ${(metrics.overduePercentage * 100).toFixed(0)}%
+Bug ratio: ${(metrics.bugRatio * 100).toFixed(0)}%
+Team balance std dev: ${metrics.teamBalanceStdDev.toFixed(1)} tasks
+Completion rate: ${(metrics.completionRate * 100).toFixed(0)}%
+Sprint progress: ${(metrics.sprintProgress * 100).toFixed(0)}%
+
+Return JSON: { "assessment": "2-3 sentence health assessment", "suggestions": ["suggestion1", "suggestion2", "suggestion3"] }`;
+
+  try {
+    const result = await generateJSON<{ assessment: string; suggestions: string[] }>(prompt);
+    return { score, grade, assessment: result.assessment, suggestions: result.suggestions };
+  } catch {
+    return {
+      score,
+      grade,
+      assessment: `Project health is ${grade}. Score: ${score}/100.`,
+      suggestions: ["Review overdue tasks", "Balance team workload", "Track velocity trends"],
+    };
+  }
+}
+
+// --- Excel Import: Parse spreadsheet rows into tasks via AI ---
+export async function analyzeExcelForTasks(
+  headers: string[],
+  rows: Record<string, any>[]
+): Promise<{ tasks: Array<{ title: string; description: string; type: string; priority: string; labels: string[] }> }> {
+  const prompt = `Analyze this spreadsheet data and convert each row into a task or bug for project management.
+For each row, determine:
+- title (concise task title)
+- description (detailed from row data)
+- type: "task" or "bug" (detect from content — errors/issues/crashes/defects = bug, else task)
+- priority: "urgent"|"high"|"medium"|"low" (infer from severity/importance columns if present, default "medium")
+- labels (infer relevant labels from content, e.g. "frontend", "backend", "design", "documentation")
+
+Spreadsheet headers: ${JSON.stringify(headers)}
+Data rows (${rows.length} rows): ${JSON.stringify(rows.slice(0, 50))}
+
+Return JSON: { "tasks": [{ "title": "...", "description": "...", "type": "task"|"bug", "priority": "urgent"|"high"|"medium"|"low", "labels": ["..."] }] }`;
+
+  try {
+    return await generateJSON(prompt);
+  } catch {
+    // Fallback: create basic tasks from rows
+    return {
+      tasks: rows.slice(0, 50).map((row, i) => {
+        const values = Object.values(row).filter(Boolean);
+        const title = String(values[0] || `Row ${i + 1}`).slice(0, 200);
+        const description = Object.entries(row).map(([k, v]) => `**${k}:** ${v}`).join("\n");
+        const lower = description.toLowerCase();
+        const isBug = /bug|error|crash|issue|defect|broken|fix/.test(lower);
+        return { title, description, type: isBug ? "bug" : "task", priority: "medium" as const, labels: [] };
+      }),
     };
   }
 }

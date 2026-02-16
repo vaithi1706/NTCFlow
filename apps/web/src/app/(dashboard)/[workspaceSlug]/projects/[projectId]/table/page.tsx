@@ -20,6 +20,7 @@ import { BulkActionBar } from "@/components/shared/bulk-action-bar";
 import { ArrowUp, ArrowDown, Columns3, Table2, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { AiExcelImport } from "@/components/ai/ai-excel-import";
 import type { TaskWithRelations } from "@dkflow/shared";
 
 type SortKey = "taskNumber" | "title" | "status" | "priority" | "dueDate" | "createdAt";
@@ -140,6 +141,7 @@ export default function TablePage() {
       <TopBar breadcrumbs={breadcrumbs} showViewSwitcher showFilter currentView="table" onViewChange={handleViewChange} />
       <FilterBar filters={filters} onChange={setFilters} labels={labels} members={members} />
       <div className="flex items-center justify-end px-6 py-1 gap-2">
+        <AiExcelImport projectId={projectId} onComplete={() => refetch()} />
         <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 text-muted-foreground" onClick={exportCSV}>
           <Download className="h-3.5 w-3.5" /> Export CSV
         </Button>

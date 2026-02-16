@@ -1216,6 +1216,35 @@ model TaskTemplate {
 
 // ─── INTEGRATIONS (Slack / Teams) ───────────────────────
 
+// ─── AI CHAT SESSIONS ───────────────────────────────────
+
+model AiChatSession {
+  id          String   @id @default(uuid()) @map("Id") @db.Uuid
+  userId      String   @map("UserId") @db.Uuid
+  workspaceId String   @map("WorkspaceId") @db.Uuid
+  projectId   String?  @map("ProjectId") @db.Uuid
+  title       String   @default("New Chat") @map("Title") @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("UpdatedAt") @db.Timestamptz
+  messages    AiChatMessage[]
+
+  @@index([userId, workspaceId])
+  @@map("AiChatSessions")
+}
+
+model AiChatMessage {
+  id        String   @id @default(uuid()) @map("Id") @db.Uuid
+  sessionId String   @map("SessionId") @db.Uuid
+  role      String   @map("Role") @db.VarChar(20)
+  content   String   @map("Content")
+  actions   Json?    @map("Actions")
+  createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+  session   AiChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("AiChatMessages")
+}
+
 enum IntegrationType {
   slack
   teams

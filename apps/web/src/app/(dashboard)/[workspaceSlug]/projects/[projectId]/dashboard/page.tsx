@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/api/trpc";
 import { useProjectData } from "@/hooks/use-project-data";
 import { AiProjectSummary } from "@/components/ai/ai-project-summary";
+import { AiHealthScore } from "@/components/ai/ai-health-score";
 import { Plus, MoreHorizontal, Trash2, ArrowUp, ArrowDown, Maximize2, Minimize2 } from "lucide-react";
 import { PdfExportButton } from "@/components/shared/pdf-export-button";
 import {
@@ -201,6 +202,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        <AiHealthScore projectId={projectId} />
         <AiProjectSummary projectId={projectId} />
       </div>
     </>
