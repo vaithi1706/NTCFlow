@@ -1,0 +1,170 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0.014 256);
+  --card: oklch(0.985 0.005 256);
+  --card-foreground: oklch(0.145 0.014 256);
+  --popover: oklch(0.985 0.005 256);
+  --popover-foreground: oklch(0.145 0.014 256);
+  --primary: oklch(0.623 0.214 259);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.97 0.005 256);
+  --secondary-foreground: oklch(0.205 0.014 256);
+  --muted: oklch(0.97 0.005 256);
+  --muted-foreground: oklch(0.556 0.014 256);
+  --accent: oklch(0.97 0.005 256);
+  --accent-foreground: oklch(0.205 0.014 256);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.9 0.01 256);
+  --input: oklch(0.9 0.01 256);
+  --ring: oklch(0.623 0.214 259);
+  --chart-1: oklch(0.623 0.214 259);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.985 0.005 256);
+  --sidebar-foreground: oklch(0.145 0.014 256);
+  --sidebar-primary: oklch(0.623 0.214 259);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.97 0.005 256);
+  --sidebar-accent-foreground: oklch(0.205 0.014 256);
+  --sidebar-border: oklch(0.9 0.01 256);
+  --sidebar-ring: oklch(0.623 0.214 259);
+}
+
+.dark {
+  --background: oklch(0.13 0.02 260);
+  --foreground: oklch(0.97 0.005 256);
+  --card: oklch(0.17 0.02 260);
+  --card-foreground: oklch(0.97 0.005 256);
+  --popover: oklch(0.17 0.02 260);
+  --popover-foreground: oklch(0.97 0.005 256);
+  --primary: oklch(0.623 0.214 259);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.22 0.02 260);
+  --secondary-foreground: oklch(0.97 0.005 256);
+  --muted: oklch(0.22 0.02 260);
+  --muted-foreground: oklch(0.6 0.01 256);
+  --accent: oklch(0.22 0.02 260);
+  --accent-foreground: oklch(0.97 0.005 256);
+  --destructive: oklch(0.65 0.23 27);
+  --border: oklch(0.27 0.02 260);
+  --input: oklch(0.27 0.02 260);
+  --ring: oklch(0.623 0.214 259);
+  --chart-1: oklch(0.623 0.214 259);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.15 0.02 260);
+  --sidebar-foreground: oklch(0.97 0.005 256);
+  --sidebar-primary: oklch(0.623 0.214 259);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.22 0.02 260);
+  --sidebar-accent-foreground: oklch(0.97 0.005 256);
+  --sidebar-border: oklch(0.27 0.02 260);
+  --sidebar-ring: oklch(0.623 0.214 259);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* Driver.js dark theme overrides */
+.dark .driver-popover {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+}
+.dark .driver-popover .driver-popover-title {
+  color: hsl(var(--foreground));
+}
+.dark .driver-popover .driver-popover-description {
+  color: hsl(var(--muted-foreground));
+}
+.dark .driver-popover .driver-popover-progress-text {
+  color: hsl(var(--muted-foreground));
+}
+.dark .driver-popover .driver-popover-prev-btn {
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--border));
+}
+.dark .driver-popover .driver-popover-prev-btn:hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+.dark .driver-popover .driver-popover-next-btn,
+.dark .driver-popover .driver-popover-close-btn-text {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+  text-shadow: none;
+}
+.dark .driver-popover .driver-popover-next-btn:hover {
+  background-color: hsl(var(--primary) / 0.9);
+}
+.dark .driver-popover .driver-popover-arrow-side-left .driver-popover-arrow,
+.dark .driver-popover .driver-popover-arrow-side-right .driver-popover-arrow,
+.dark .driver-popover .driver-popover-arrow-side-top .driver-popover-arrow,
+.dark .driver-popover .driver-popover-arrow-side-bottom .driver-popover-arrow {
+  border-color: hsl(var(--card));
+}
+.dark .driver-popover .driver-popover-close-btn {
+  color: hsl(var(--muted-foreground));
+}
+.dark .driver-popover .driver-popover-close-btn:hover {
+  color: hsl(var(--foreground));
+}

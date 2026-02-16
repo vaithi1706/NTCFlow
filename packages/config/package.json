@@ -1,0 +1,11 @@
+{
+  "name": "@dkflow/config",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./typescript/base": "./typescript/base.json",
+    "./typescript/nextjs": "./typescript/nextjs.json",
+    "./typescript/node": "./typescript/node.json",
+    "./eslint/base": "./eslint/base.js"
+  }
+}
