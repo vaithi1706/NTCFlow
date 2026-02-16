@@ -1269,3 +1269,64 @@ model Integration {
   @@index([workspaceId, isActive])
   @@map("Integrations")
 }
+
+// ─── GOALS / OKRs ──────────────────────────────────────
+
+model Goal {
+  id          String   @id @default(uuid()) @map("Id") @db.Uuid
+  workspaceId String   @map("WorkspaceId") @db.Uuid
+  title       String   @map("Title") @db.VarChar(255)
+  description String?  @map("Description")
+  type        String   @default("objective") @map("Type") @db.VarChar(20)
+  parentId    String?  @map("ParentId") @db.Uuid
+  ownerId     String?  @map("OwnerId") @db.Uuid
+  status      String   @default("on_track") @map("Status") @db.VarChar(20)
+  progress    Int      @default(0) @map("Progress")
+  targetValue Decimal? @map("TargetValue")
+  currentValue Decimal? @map("CurrentValue")
+  startDate   DateTime? @map("StartDate") @db.Timestamptz
+  dueDate     DateTime? @map("DueDate") @db.Timestamptz
+  createdAt   DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("UpdatedAt") @db.Timestamptz
+
+  parent      Goal?          @relation("GoalChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Goal[]         @relation("GoalChildren")
+  taskLinks   GoalTaskLink[]
+
+  @@index([workspaceId])
+  @@index([parentId])
+  @@index([ownerId])
+  @@map("Goals")
+}
+
+model GoalTaskLink {
+  id        String   @id @default(uuid()) @map("Id") @db.Uuid
+  goalId    String   @map("GoalId") @db.Uuid
+  taskId    String   @map("TaskId") @db.Uuid
+  createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, taskId])
+  @@index([goalId])
+  @@index([taskId])
+  @@map("GoalTaskLinks")
+}
+
+// ─── TASK APPROVALS ─────────────────────────────────────
+
+model TaskApproval {
+  id            String   @id @default(uuid()) @map("Id") @db.Uuid
+  taskId        String   @map("TaskId") @db.Uuid
+  requestedById String   @map("RequestedById") @db.Uuid
+  approverId    String   @map("ApproverId") @db.Uuid
+  status        String   @default("pending") @map("Status") @db.VarChar(20)
+  comment       String?  @map("Comment")
+  createdAt     DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+  updatedAt     DateTime @default(now()) @map("UpdatedAt") @db.Timestamptz
+
+  @@index([taskId])
+  @@index([approverId])
+  @@index([requestedById])
+  @@map("TaskApprovals")
+}

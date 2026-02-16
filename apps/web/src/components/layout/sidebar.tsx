@@ -8,6 +8,7 @@ import {
   Home, Star, Plus, ChevronLeft, ChevronDown, LogOut,
   Settings, ChevronsLeft, LayoutGrid, User as UserIcon, Loader2, Users,
   ChevronsUpDown, Building2, BarChart3, UsersRound, Shield, Briefcase,
+  Target, ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui-store";
@@ -39,6 +40,8 @@ const navItems = [
   { icon: Users, label: "Members", href: "/members" },
   { icon: UsersRound, label: "Teams", href: "/teams" },
   { icon: BarChart3, label: "Workload", href: "/workload" },
+  { icon: Target, label: "Goals", href: "/goals" },
+  { icon: ClipboardCheck, label: "Approvals", href: "/approvals" },
   { icon: Settings, label: "Workspace Settings", href: "/workspace-settings", permission: "canAccessSettings" },
   { icon: Shield, label: "Audit Log", href: "/audit-log", permission: "canAccessSettings" },
 ];

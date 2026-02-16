@@ -34,6 +34,9 @@ import { formRouter } from "./form.router.js";
 import { taskTemplateRouter } from "./taskTemplate.router.js";
 import { subscriptionRouter } from "./subscription.router.js";
 import { adminRouter } from "./admin.router.js";
+import { goalRouter } from "./goal.router.js";
+import { approvalRouter } from "./approval.router.js";
+import { workloadRouter } from "./workload.router.js";
 
 export const appRouter = router({
   auth: authRouter,
@@ -71,6 +74,9 @@ export const appRouter = router({
   taskTemplate: taskTemplateRouter,
   subscription: subscriptionRouter,
   admin: adminRouter,
+  goal: goalRouter,
+  approval: approvalRouter,
+  workload: workloadRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Bell, Filter, Search, LayoutGrid, List, Table, CalendarDays, GanttChart, BarChart3, Zap, Map, Layers, Package, FileText } from "lucide-react";
+import { Bell, Filter, Search, LayoutGrid, List, Table, CalendarDays, GanttChart, BarChart3, Zap, Map, Layers, Package, FileText, GitBranch, Grid3X3, Milestone } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,9 @@ const views = [
   { id: "dashboard", icon: BarChart3, label: "Dashboard" },
   { id: "sprints", icon: Zap, label: "Sprints" },
   { id: "releases", icon: Package, label: "Releases" },
+  { id: "dependencies", icon: GitBranch, label: "Dependencies" },
+  { id: "matrix", icon: Grid3X3, label: "Matrix" },
+  { id: "epics", icon: Milestone, label: "Epics" },
   { id: "time-report", icon: Clock, label: "Time Report" },
   { id: "forms", icon: FileText, label: "Forms" },
   { id: "settings", icon: Settings, label: "Settings" },
