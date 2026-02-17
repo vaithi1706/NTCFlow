@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { TopBar } from "@/components/layout/topbar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PriorityBadge } from "@/components/shared/priority-badge";
 import { trpc } from "@/lib/api/trpc";
 import { useAuthStore } from "@/stores/auth-store";
-import { Grid3X3, Calendar } from "lucide-react";
+import {
+  Grid3X3, Calendar, AlertTriangle, ClipboardList,
+  Users, Trash2, GripVertical,
+} from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -16,47 +20,72 @@ interface Quadrant {
   id: string;
   title: string;
   subtitle: string;
+  icon: React.ElementType;
+  iconColor: string;
   bg: string;
+  bgHover: string;
   border: string;
-  text: string;
+  titleColor: string;
+  cardBg: string;
+  cardBorder: string;
   priorities: string[];
 }
 
 const QUADRANTS: Quadrant[] = [
   {
     id: "do_first",
-    title: "🔥 Do First",
+    title: "Do First",
     subtitle: "Urgent & Important",
+    icon: AlertTriangle,
+    iconColor: "text-red-400",
     bg: "bg-red-500/5",
+    bgHover: "bg-red-500/10",
     border: "border-red-500/20",
-    text: "text-red-400",
+    titleColor: "text-red-400",
+    cardBg: "bg-red-500/5 hover:bg-red-500/10",
+    cardBorder: "border-red-500/10 hover:border-red-500/30",
     priorities: ["urgent"],
   },
   {
     id: "schedule",
-    title: "📋 Schedule",
+    title: "Schedule",
     subtitle: "Not Urgent & Important",
+    icon: ClipboardList,
+    iconColor: "text-blue-400",
     bg: "bg-blue-500/5",
+    bgHover: "bg-blue-500/10",
     border: "border-blue-500/20",
-    text: "text-blue-400",
+    titleColor: "text-blue-400",
+    cardBg: "bg-blue-500/5 hover:bg-blue-500/10",
+    cardBorder: "border-blue-500/10 hover:border-blue-500/30",
     priorities: ["high"],
   },
   {
     id: "delegate",
-    title: "👥 Delegate",
+    title: "Delegate",
     subtitle: "Urgent & Not Important",
-    bg: "bg-yellow-500/5",
-    border: "border-yellow-500/20",
-    text: "text-yellow-400",
+    icon: Users,
+    iconColor: "text-amber-400",
+    bg: "bg-amber-500/5",
+    bgHover: "bg-amber-500/10",
+    border: "border-amber-500/20",
+    titleColor: "text-amber-400",
+    cardBg: "bg-amber-500/5 hover:bg-amber-500/10",
+    cardBorder: "border-amber-500/10 hover:border-amber-500/30",
     priorities: ["medium"],
   },
   {
     id: "eliminate",
-    title: "🗑️ Eliminate",
+    title: "Eliminate",
     subtitle: "Not Urgent & Not Important",
+    icon: Trash2,
+    iconColor: "text-slate-400",
     bg: "bg-slate-500/5",
+    bgHover: "bg-slate-500/10",
     border: "border-slate-500/20",
-    text: "text-slate-400",
+    titleColor: "text-slate-400",
+    cardBg: "bg-slate-500/5 hover:bg-slate-500/10",
+    cardBorder: "border-slate-500/10 hover:border-slate-500/30",
     priorities: ["low", "none"],
   },
 ];
@@ -87,7 +116,7 @@ export default function MatrixPage() {
   const { data: project } = trpc.project.getById.useQuery({ id: projectId }, { enabled: !!projectId });
 
   const { data: taskData, isLoading } = trpc.task.list.useQuery(
-    { projectId, limit: 100 },
+    { projectId, limit: 200 },
     { enabled: !!projectId }
   );
 
@@ -115,17 +144,36 @@ export default function MatrixPage() {
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     setDraggedTask(taskId);
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", taskId);
   };
 
   const handleDragOver = (e: React.DragEvent, quadrantId: string) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
     setDragOverQuadrant(quadrantId);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if we're leaving the quadrant, not entering a child
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverQuadrant(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, quadrantId: string) => {
     e.preventDefault();
     setDragOverQuadrant(null);
     if (!draggedTask) return;
+
+    const task = activeTasks.find((t: any) => t.id === draggedTask);
+    const currentQuadrant = task ? getQuadrantForPriority(task.priority || "none") : null;
+
+    // Don't update if dropped in same quadrant
+    if (currentQuadrant === quadrantId) {
+      setDraggedTask(null);
+      return;
+    }
+
     const newPriority = getPriorityForQuadrant(quadrantId);
     updateMutation.mutate({ id: draggedTask, priority: newPriority as any });
     setDraggedTask(null);
@@ -149,73 +197,108 @@ export default function MatrixPage() {
         projectId={projectId}
       />
       <div className="flex-1 overflow-auto p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Grid3X3 className="h-5 w-5 text-indigo-400" />
-          <h2 className="text-lg font-semibold">Eisenhower Priority Matrix</h2>
-          <span className="text-xs text-muted-foreground ml-2">{activeTasks.length} active tasks</span>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="h-8 w-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+            <Grid3X3 className="h-4 w-4 text-indigo-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold leading-tight">Eisenhower Priority Matrix</h2>
+            <p className="text-xs text-muted-foreground">{activeTasks.length} active tasks · Drag tasks between quadrants to reprioritize</p>
+          </div>
         </div>
 
         {isLoading ? (
-          <Skeleton className="h-[600px] w-full rounded-lg" />
+          <div className="grid grid-cols-2 gap-3 h-[calc(100vh-200px)]">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="rounded-xl" />
+            ))}
+          </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 h-[calc(100vh-180px)]">
-            {QUADRANTS.map((q) => (
-              <div
-                key={q.id}
-                className={`rounded-xl border ${q.border} ${q.bg} p-4 overflow-y-auto transition-all ${
-                  dragOverQuadrant === q.id ? "ring-2 ring-indigo-500 scale-[1.01]" : ""
-                }`}
-                onDragOver={(e) => handleDragOver(e, q.id)}
-                onDragLeave={() => setDragOverQuadrant(null)}
-                onDrop={(e) => handleDrop(e, q.id)}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className={`text-sm font-semibold ${q.text}`}>{q.title}</h3>
-                    <p className="text-[10px] text-muted-foreground">{q.subtitle}</p>
-                  </div>
-                  <Badge variant="outline" className={`${q.text} text-[10px]`}>
-                    {quadrantTasks[q.id]?.length || 0}
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  {quadrantTasks[q.id]?.map((task: any) => (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, task.id)}
-                      className={`bg-slate-900/80 border border-border/50 rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-indigo-500/30 transition-all ${
-                        draggedTask === task.id ? "opacity-50" : ""
-                      }`}
-                    >
-                      <p className="text-xs font-medium mb-1 line-clamp-2">{task.title}</p>
-                      <div className="flex items-center gap-2">
-                        {task.assignees?.[0]?.user && (
-                          <Avatar className="h-4 w-4">
-                            {task.assignees[0].user.avatarUrl && <AvatarImage src={task.assignees[0].user.avatarUrl} />}
-                            <AvatarFallback className="text-[8px]">
-                              {task.assignees[0].user.name?.[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        {task.dueDate && (
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <Calendar className="h-2.5 w-2.5" />
-                            {format(new Date(task.dueDate), "MMM d")}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-muted-foreground ml-auto">#{task.taskNumber}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 h-[calc(100vh-200px)]">
+            {QUADRANTS.map((q) => {
+              const Icon = q.icon;
+              const qTasks = quadrantTasks[q.id] || [];
+              const isOver = dragOverQuadrant === q.id;
+
+              return (
+                <div
+                  key={q.id}
+                  className={`rounded-xl border ${q.border} ${isOver ? q.bgHover : q.bg} p-4 flex flex-col transition-all duration-200 ${
+                    isOver ? "ring-2 ring-primary/50 scale-[1.005]" : ""
+                  }`}
+                  onDragOver={(e) => handleDragOver(e, q.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, q.id)}
+                >
+                  {/* Quadrant Header */}
+                  <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-4 w-4 ${q.iconColor}`} />
+                      <div>
+                        <h3 className={`text-sm font-semibold ${q.titleColor}`}>{q.title}</h3>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{q.subtitle}</p>
                       </div>
                     </div>
-                  ))}
-                  {!quadrantTasks[q.id]?.length && (
-                    <p className="text-xs text-muted-foreground text-center py-8 opacity-50">
-                      Drag tasks here
-                    </p>
-                  )}
+                    <Badge
+                      variant="secondary"
+                      className={`${q.titleColor} bg-transparent border ${q.border} text-[10px] h-5 min-w-[20px] justify-center`}
+                    >
+                      {qTasks.length}
+                    </Badge>
+                  </div>
+
+                  {/* Task List */}
+                  <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
+                    {qTasks.map((task: any) => (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+                        onDragEnd={() => setDraggedTask(null)}
+                        className={`group border ${q.cardBorder} ${q.cardBg} rounded-lg p-2.5 cursor-grab active:cursor-grabbing transition-all duration-150 ${
+                          draggedTask === task.id ? "opacity-40 scale-95" : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 mt-0.5 flex-shrink-0 transition-colors" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium leading-snug line-clamp-2">{task.title}</p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <PriorityBadge priority={task.priority || "none"} />
+                              {task.assignees?.[0]?.user && (
+                                <Avatar className="h-4 w-4">
+                                  {task.assignees[0].user.avatarUrl && (
+                                    <AvatarImage src={task.assignees[0].user.avatarUrl} />
+                                  )}
+                                  <AvatarFallback className="text-[7px] bg-muted">
+                                    {task.assignees[0].user.name?.[0]?.toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              {task.dueDate && (
+                                <span className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5">
+                                  <Calendar className="h-2.5 w-2.5" />
+                                  {format(new Date(task.dueDate), "MMM d")}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-muted-foreground/60 ml-auto font-mono">
+                                #{task.taskNumber}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {!qTasks.length && (
+                      <div className="flex items-center justify-center h-full min-h-[80px]">
+                        <p className="text-xs text-muted-foreground/40">Drag tasks here</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

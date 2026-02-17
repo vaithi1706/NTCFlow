@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc.js";
 import { notifyIntegrations } from "../services/integrations.js";
+import { notifyMentioned } from "../services/emailNotifier.js";
 
 export const commentRouter = router({
   list: protectedProcedure
@@ -81,6 +82,14 @@ export const commentRouter = router({
         }
       }
 
+      // Email mentioned users
+      const taskForEmail = await ctx.prisma.task.findUnique({ where: { id: input.taskId }, select: { title: true, taskNumber: true, project: { select: { taskPrefix: true } } } });
+      for (const mentionedUserId of mentionedUserIds) {
+        if (mentionedUserId !== ctx.user.userId && taskForEmail) {
+          notifyMentioned(mentionedUserId, comment.user.name, taskForEmail.title, `${taskForEmail.project.taskPrefix}-${taskForEmail.taskNumber}`, input.content).catch(() => {});
+        }
+      }
+
       // Notify watchers
       const watchers = await ctx.prisma.taskWatcher.findMany({ where: { taskId: input.taskId, userId: { not: ctx.user.userId } } });
       for (const w of watchers) {
@@ -148,6 +157,21 @@ export const commentRouter = router({
         data: { commentId: input.commentId, userId: ctx.user.userId, emoji: input.emoji },
       });
       return { success: true };
+    }),
+
+  getMentionSuggestions: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const members = await ctx.prisma.projectMember.findMany({
+        where: { projectId: input.projectId },
+        include: { user: { select: { id: true, name: true, avatarUrl: true, email: true } } },
+      });
+      return members.map((m) => ({
+        id: m.user.id,
+        name: m.user.name,
+        avatarUrl: m.user.avatarUrl,
+        email: m.user.email,
+      }));
     }),
 
   removeReaction: protectedProcedure

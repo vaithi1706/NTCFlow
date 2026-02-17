@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc.js";
 import { sendTaskAssignedEmail } from "../services/email.js";
+import { notifyTaskAssigned } from "../services/emailNotifier.js";
 import { requirePermission, checkPermission, getWorkspaceIdFromProject, requireProjectAccess } from "../middleware/permissions.js";
 import { logAudit } from "../utils/audit.js";
 import { notifyIntegrations } from "../services/integrations.js";
@@ -22,6 +23,7 @@ export const taskRouter = router({
       dueAfter: z.string().datetime().optional(),
       search: z.string().optional(),
       sortBy: z.enum(["createdAt", "updatedAt", "priority", "dueDate", "position", "taskNumber"]).default("position"),
+      excludeSubtasks: z.boolean().default(true),
       sortDir: z.enum(["asc", "desc"]).default("asc"),
       limit: z.number().int().min(1).max(100).default(50),
       cursor: z.string().uuid().optional(),
@@ -29,6 +31,7 @@ export const taskRouter = router({
     .query(async ({ ctx, input }) => {
       await requireProjectAccess(ctx.prisma, ctx.user.userId, input.projectId);
       const where: any = { projectId: input.projectId, deletedAt: null };
+      if (input.excludeSubtasks) where.parentId = null;
       if (input.columnId) where.columnId = input.columnId;
       if (input.assigneeId) where.assignees = { some: { userId: input.assigneeId } };
       if (input.labelId) where.labels = { some: { labelId: input.labelId } };
@@ -48,7 +51,7 @@ export const taskRouter = router({
           labels: { include: { label: true } },
           column: { select: { id: true, name: true, isDone: true } },
           sprintTasks: { select: { sprintId: true } },
-          _count: { select: { comments: true, attachments: true, subtasks: true } },
+          _count: { select: { comments: true, attachments: true, subtasks: true, votes: true } },
         },
         orderBy: { [input.sortBy]: input.sortDir },
         take: input.limit + 1,
@@ -232,7 +235,11 @@ export const taskRouter = router({
       if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
       if (data.startDate !== undefined) updateData.startDate = data.startDate ? new Date(data.startDate) : null;
       if (data.recurrenceEndDate !== undefined) updateData.recurrenceEndDate = data.recurrenceEndDate ? new Date(data.recurrenceEndDate) : null;
-      if (data.status === "done") updateData.completedAt = new Date();
+      if (data.status === "done") {
+        updateData.completedAt = new Date();
+      } else if (data.status) {
+        updateData.completedAt = null;
+      }
 
       const task = await ctx.prisma.task.update({ where: { id }, data: updateData });
 
@@ -402,7 +409,34 @@ export const taskRouter = router({
       });
 
       const updateData: any = { columnId: input.columnId, position: input.position };
-      if (newCol.isDone) { updateData.status = "done"; updateData.completedAt = new Date(); }
+
+      // Sync task status based on column name
+      if (newCol.isDone) {
+        updateData.status = "done";
+        updateData.completedAt = new Date();
+      } else {
+        const colNameLower = newCol.name.toLowerCase().replace(/[\s\-_]+/g, "_");
+        const statusMap: Record<string, string> = {
+          backlog: "backlog",
+          to_do: "todo",
+          todo: "todo",
+          in_progress: "in_progress",
+          in_review: "in_review",
+          review: "in_review",
+          doing: "in_progress",
+          development: "in_progress",
+          testing: "in_review",
+          qa: "in_review",
+        };
+        const mappedStatus = statusMap[colNameLower];
+        if (mappedStatus) {
+          updateData.status = mappedStatus;
+        }
+        // Clear completedAt if moving away from done
+        if (oldTask.status === "done") {
+          updateData.completedAt = null;
+        }
+      }
 
       const task = await ctx.prisma.task.update({ where: { id: input.taskId }, data: updateData });
 
@@ -437,6 +471,14 @@ export const taskRouter = router({
             message: task?.title,
           },
         });
+      }
+      // Email notification
+      if (input.userId !== ctx.user.userId) {
+        const taskForEmail = await ctx.prisma.task.findUnique({ where: { id: input.taskId }, select: { title: true, taskNumber: true, project: { select: { taskPrefix: true } } } });
+        const assigner = await ctx.prisma.user.findUnique({ where: { id: ctx.user.userId }, select: { name: true } });
+        if (taskForEmail) {
+          notifyTaskAssigned(input.userId, assigner?.name || "Someone", taskForEmail.title, `${taskForEmail.project.taskPrefix}-${taskForEmail.taskNumber}`).catch(() => {});
+        }
       }
       // Notify integrations
       const taskForIntg = await ctx.prisma.task.findUnique({ where: { id: input.taskId }, select: { title: true, projectId: true } });
@@ -699,6 +741,81 @@ export const taskRouter = router({
       return { subtasks, progress: total > 0 ? Math.round((done / total) * 100) : 0 };
     }),
 
+  createSubtask: protectedProcedure
+    .input(z.object({
+      parentId: z.string().uuid(),
+      title: z.string().min(1).max(500),
+      priority: z.enum(["urgent", "high", "medium", "low", "none"]).default("none"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const parent = await ctx.prisma.task.findUniqueOrThrow({ where: { id: input.parentId } });
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, parent.projectId);
+      await requirePermission(ctx.prisma, ctx.user.userId, wsId, "canCreateTasks");
+      const taskCount = await ctx.prisma.task.count({ where: { project: { workspaceId: wsId }, deletedAt: null } });
+      await checkLimit(wsId, "maxTasks", taskCount);
+      const project = await ctx.prisma.project.update({
+        where: { id: parent.projectId },
+        data: { taskCounter: { increment: 1 } },
+      });
+      const maxPos = await ctx.prisma.task.aggregate({
+        where: { parentId: input.parentId, deletedAt: null },
+        _max: { position: true },
+      });
+      const task = await ctx.prisma.task.create({
+        data: {
+          title: input.title,
+          priority: input.priority,
+          projectId: parent.projectId,
+          columnId: parent.columnId,
+          parentId: input.parentId,
+          taskNumber: project.taskCounter,
+          status: "todo",
+          position: (maxPos._max.position ?? -1) + 1,
+          createdById: ctx.user.userId,
+        },
+        include: {
+          assignees: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+        },
+      });
+      await ctx.prisma.taskActivity.create({
+        data: { taskId: task.id, userId: ctx.user.userId, action: "created", metadata: { parentId: input.parentId } },
+      });
+      return task;
+    }),
+
+  convertToSubtask: protectedProcedure
+    .input(z.object({
+      taskId: z.string().uuid(),
+      parentId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (input.taskId === input.parentId) throw new TRPCError({ code: "BAD_REQUEST", message: "Task cannot be its own parent" });
+      // Prevent circular: parent can't already be a subtask of this task
+      const potentialParent = await ctx.prisma.task.findUniqueOrThrow({ where: { id: input.parentId } });
+      if (potentialParent.parentId === input.taskId) throw new TRPCError({ code: "BAD_REQUEST", message: "Circular subtask relationship" });
+      const task = await ctx.prisma.task.update({
+        where: { id: input.taskId },
+        data: { parentId: input.parentId },
+      });
+      await ctx.prisma.taskActivity.create({
+        data: { taskId: input.taskId, userId: ctx.user.userId, action: "converted_to_subtask", newValue: input.parentId },
+      }).catch(() => {});
+      return task;
+    }),
+
+  promoteToTask: protectedProcedure
+    .input(z.object({ taskId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const task = await ctx.prisma.task.update({
+        where: { id: input.taskId },
+        data: { parentId: null },
+      });
+      await ctx.prisma.taskActivity.create({
+        data: { taskId: input.taskId, userId: ctx.user.userId, action: "promoted_to_task" },
+      }).catch(() => {});
+      return task;
+    }),
+
   // ─── Dependencies ──────────────────────────────────────
   addDependency: protectedProcedure
     .input(z.object({
@@ -861,7 +978,7 @@ export const taskRouter = router({
         include: {
           assignees: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
           labels: { include: { label: true } },
-          _count: { select: { comments: true, attachments: true, subtasks: true } },
+          _count: { select: { comments: true, attachments: true, subtasks: true, votes: true } },
         },
         orderBy: { createdAt: "desc" },
       });
@@ -927,5 +1044,29 @@ export const taskRouter = router({
       }
 
       return { checked: tasksDueSoon.length, notificationsSent: notifCount };
+    }),
+
+  vote: protectedProcedure
+    .input(z.object({ taskId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.prisma.taskVote.findUnique({
+        where: { taskId_userId: { taskId: input.taskId, userId: ctx.user.userId } },
+      });
+      if (existing) {
+        await ctx.prisma.taskVote.delete({ where: { id: existing.id } });
+        return { voted: false };
+      }
+      await ctx.prisma.taskVote.create({ data: { taskId: input.taskId, userId: ctx.user.userId } });
+      return { voted: true };
+    }),
+
+  getVotes: protectedProcedure
+    .input(z.object({ taskId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const count = await ctx.prisma.taskVote.count({ where: { taskId: input.taskId } });
+      const userVoted = await ctx.prisma.taskVote.findUnique({
+        where: { taskId_userId: { taskId: input.taskId, userId: ctx.user.userId } },
+      });
+      return { count, voted: !!userVoted };
     }),
 });

@@ -28,6 +28,14 @@ const notificationItems = [
   { id: "task_status_changed", label: "Task status changed" },
 ];
 
+const emailNotificationItems = [
+  { id: "email_assignments", label: "Task assigned to me" },
+  { id: "email_mentions", label: "Mentioned in a comment" },
+  { id: "email_due_dates", label: "Task due tomorrow" },
+  { id: "email_sprint_updates", label: "Sprint started / ended" },
+  { id: "email_weekly_digest", label: "Weekly digest" },
+];
+
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { user, setUser } = useAuthStore();
@@ -179,6 +187,26 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {notificationItems.map((item) => (
+              <div key={item.id} className="flex items-center justify-between">
+                <Label htmlFor={item.id} className="font-normal">{item.label}</Label>
+                <Switch
+                  id={item.id}
+                  checked={prefs[item.id] ?? true}
+                  onCheckedChange={(checked) => handleTogglePref(item.id, checked)}
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Email Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Email Notifications</CardTitle>
+            <CardDescription>Choose which events trigger an email to your inbox</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {emailNotificationItems.map((item) => (
               <div key={item.id} className="flex items-center justify-between">
                 <Label htmlFor={item.id} className="font-normal">{item.label}</Label>
                 <Switch

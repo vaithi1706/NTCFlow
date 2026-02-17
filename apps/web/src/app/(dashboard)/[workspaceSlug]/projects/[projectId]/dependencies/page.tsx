@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { TopBar } from "@/components/layout/topbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/api/trpc";
-import { useAuthStore } from "@/stores/auth-store";
 import { GitBranch } from "lucide-react";
 
 const STATUS_COLORS: Record<string, { fill: string; stroke: string }> = {
@@ -29,6 +27,11 @@ interface NodePos {
   onCriticalPath: boolean;
 }
 
+interface DepEdge {
+  fromId: string;
+  toId: string;
+}
+
 export default function DependenciesPage() {
   const params = useParams();
   const router = useRouter();
@@ -36,73 +39,96 @@ export default function DependenciesPage() {
   const workspaceSlug = params.workspaceSlug as string;
   const svgRef = useRef<SVGSVGElement>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [allDeps, setAllDeps] = useState<DepEdge[]>([]);
+  const [depsLoading, setDepsLoading] = useState(true);
 
   const { data: project } = trpc.project.getById.useQuery({ id: projectId }, { enabled: !!projectId });
-
   const { data: taskData, isLoading } = trpc.task.list.useQuery(
-    { projectId, limit: 100 },
+    { projectId, limit: 200 },
     { enabled: !!projectId }
   );
 
-  const tasks = taskData?.tasks || [];
+  const tasks = taskData?.tasks ?? [];
+  const utils = trpc.useUtils();
 
-  // Fetch dependencies for all tasks in project
-  // Use individual queries for tasks that have dependencies
-  const taskIds = tasks.map((t: any) => t.id);
-
-  // We'll fetch all dependencies at once via a batch of individual calls
-  // Better approach: use one query per task but only for tasks in the project
-  // For now, since we can't add a new router easily, let's get getById for each task which includes deps
-  // Actually, let's just query each task's dependencies
-  const depQueries = tasks.slice(0, 50).map((t: any) =>
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    trpc.task.getDependencies.useQuery({ taskId: t.id }, { enabled: !!t.id })
-  );
-
-  const allDepsLoaded = depQueries.every((q) => !q.isLoading);
-
-  const { nodes, edges, svgWidth, svgHeight, hasDeps } = useMemo(() => {
-    if (!tasks.length || !allDepsLoaded) return { nodes: [], edges: [], svgWidth: 800, svgHeight: 400, hasDeps: false };
-
-    const taskMap = new Map(tasks.map((t: any) => [t.id, t]));
-    const projectTaskIds = new Set(taskIds);
-
-    // Build adjacency from dep queries
-    const adjForward = new Map<string, string[]>(); // task -> tasks it blocks
-    const adjBack = new Map<string, string[]>(); // task -> tasks blocking it
-    const blockedSet = new Set<string>();
-    let totalDeps = 0;
-
-    for (const q of depQueries) {
-      if (!q.data) continue;
-      // dependencies = things this task depends on
-      for (const dep of q.data.dependencies) {
-        if (!projectTaskIds.has(dep.dependsOn.id)) continue;
-        const fromId = dep.dependsOn.id; // the blocker
-        const toId = dep.taskId; // the blocked
-        if (!adjForward.has(fromId)) adjForward.set(fromId, []);
-        if (!adjForward.get(fromId)!.includes(toId)) adjForward.get(fromId)!.push(toId);
-        if (!adjBack.has(toId)) adjBack.set(toId, []);
-        if (!adjBack.get(toId)!.includes(fromId)) adjBack.get(toId)!.push(fromId);
-        const blocker = taskMap.get(fromId);
-        if (blocker && blocker.status !== "done") blockedSet.add(toId);
-        totalDeps++;
-      }
-      for (const dep of q.data.dependents) {
-        if (!projectTaskIds.has(dep.task.id)) continue;
-        const fromId = dep.dependsOnId; // the blocker (current task)
-        const toId = dep.task.id; // the blocked
-        if (!adjForward.has(fromId)) adjForward.set(fromId, []);
-        if (!adjForward.get(fromId)!.includes(toId)) adjForward.get(fromId)!.push(toId);
-        if (!adjBack.has(toId)) adjBack.set(toId, []);
-        if (!adjBack.get(toId)!.includes(fromId)) adjBack.get(toId)!.push(fromId);
-        const blocker = taskMap.get(fromId);
-        if (blocker && blocker.status !== "done") blockedSet.add(toId);
-        totalDeps++;
-      }
+  // Fetch all dependencies in a useEffect instead of conditional hooks
+  useEffect(() => {
+    if (!tasks.length) {
+      setDepsLoading(false);
+      setAllDeps([]);
+      return;
     }
 
-    // Only show tasks that have dependencies
+    let cancelled = false;
+    setDepsLoading(true);
+
+    const fetchAllDeps = async () => {
+      const projectTaskIds = new Set(tasks.map((t: any) => t.id));
+      const edges: DepEdge[] = [];
+      const seen = new Set<string>();
+
+      // Fetch deps for each task (max 50)
+      const batchTasks = tasks.slice(0, 50);
+      const results = await Promise.allSettled(
+        batchTasks.map((t: any) =>
+          utils.task.getDependencies.fetch({ taskId: t.id })
+        )
+      );
+
+      for (const result of results) {
+        if (result.status !== "fulfilled" || !result.value) continue;
+        const { dependencies, dependents } = result.value;
+
+        for (const dep of (dependencies ?? [])) {
+          if (!dep.dependsOn || !projectTaskIds.has(dep.dependsOn.id)) continue;
+          const key = `${dep.dependsOn.id}->${dep.taskId}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            edges.push({ fromId: dep.dependsOn.id, toId: dep.taskId });
+          }
+        }
+
+        for (const dep of (dependents ?? [])) {
+          if (!dep.task || !projectTaskIds.has(dep.task.id)) continue;
+          const key = `${dep.dependsOnId}->${dep.task.id}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            edges.push({ fromId: dep.dependsOnId, toId: dep.task.id });
+          }
+        }
+      }
+
+      if (!cancelled) {
+        setAllDeps(edges);
+        setDepsLoading(false);
+      }
+    };
+
+    fetchAllDeps();
+    return () => { cancelled = true; };
+  }, [tasks.length, projectId]);
+
+  const { nodes, edges, svgWidth, svgHeight, hasDeps } = useMemo(() => {
+    if (!tasks.length || depsLoading) return { nodes: [], edges: [], svgWidth: 800, svgHeight: 400, hasDeps: false };
+
+    const taskMap = new Map(tasks.map((t: any) => [t.id, t]));
+    const blockedSet = new Set<string>();
+
+    // Build adjacency
+    const adjForward = new Map<string, string[]>();
+    const adjBack = new Map<string, string[]>();
+
+    for (const edge of allDeps) {
+      if (!adjForward.has(edge.fromId)) adjForward.set(edge.fromId, []);
+      adjForward.get(edge.fromId)!.push(edge.toId);
+      if (!adjBack.has(edge.toId)) adjBack.set(edge.toId, []);
+      adjBack.get(edge.toId)!.push(edge.fromId);
+
+      const blocker = taskMap.get(edge.fromId);
+      if (blocker && blocker.status !== "done") blockedSet.add(edge.toId);
+    }
+
+    // Involved tasks
     const involvedIds = new Set<string>();
     for (const [k, vs] of adjForward) { involvedIds.add(k); vs.forEach((v) => involvedIds.add(v)); }
     for (const [k, vs] of adjBack) { involvedIds.add(k); vs.forEach((v) => involvedIds.add(v)); }
@@ -111,7 +137,7 @@ export default function DependenciesPage() {
     if (filterStatus !== "all") involved = involved.filter((t: any) => t.status === filterStatus);
     const filteredIds = new Set(involved.map((t: any) => t.id));
 
-    // Topological sort
+    // Topological levels
     const levels = new Map<string, number>();
     const visited = new Set<string>();
 
@@ -195,9 +221,9 @@ export default function DependenciesPage() {
       edges: edgeList,
       svgWidth: Math.max(maxX + padding, 800),
       svgHeight: Math.max(maxY + padding, 400),
-      hasDeps: totalDeps > 0,
+      hasDeps: allDeps.length > 0,
     };
-  }, [tasks, depQueries, allDepsLoaded, filterStatus]);
+  }, [tasks, allDeps, depsLoading, filterStatus]);
 
   const handleViewChange = (view: string) => {
     router.push(`/${workspaceSlug}/projects/${projectId}/${view}`);
@@ -237,7 +263,6 @@ export default function DependenciesPage() {
           </Select>
         </div>
 
-        {/* Legend */}
         <div className="flex gap-4 mb-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1"><span className="h-3 w-3 rounded" style={{ background: "#22c55e" }} /> Done</span>
           <span className="flex items-center gap-1"><span className="h-3 w-3 rounded" style={{ background: "#3b82f6" }} /> In Progress</span>
@@ -246,7 +271,7 @@ export default function DependenciesPage() {
           <span className="flex items-center gap-1"><span className="h-3 w-6 border-t-2 border-amber-400" /> Critical Path</span>
         </div>
 
-        {isLoading || !allDepsLoaded ? (
+        {isLoading || depsLoading ? (
           <Skeleton className="h-[400px] w-full rounded-lg" />
         ) : !hasDeps || !nodes.length ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
@@ -297,7 +322,7 @@ export default function DependenciesPage() {
                     />
                     <rect width={4} height={50} rx={2} fill={colors.fill} />
                     <text x={14} y={20} fontSize={11} fill="#e2e8f0" fontWeight={500}>
-                      {node.task.title?.slice(0, 22)}{node.task.title?.length > 22 ? "…" : ""}
+                      {node.task.title?.slice(0, 22)}{(node.task.title?.length ?? 0) > 22 ? "…" : ""}
                     </text>
                     <text x={14} y={36} fontSize={9} fill="#94a3b8">
                       #{node.task.taskNumber} · {node.task.status?.replace("_", " ")}

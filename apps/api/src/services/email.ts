@@ -50,7 +50,7 @@ function getTransporter(): nodemailer.Transporter | null {
   return transporter;
 }
 
-async function sendMail(to: string, subject: string, html: string): Promise<boolean> {
+export async function sendMail(to: string, subject: string, html: string): Promise<boolean> {
   const t = getTransporter();
   if (!t) {
     logger.warn(`[email] SMTP not configured, skipping email to ${to}`);
@@ -75,59 +75,96 @@ async function sendMail(to: string, subject: string, html: string): Promise<bool
 
 // ─── Templates ──────────────────────────────────────────
 
-function wrap(body: string): string {
-  return `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
-    <div style="border-bottom:2px solid #6366f1;padding-bottom:10px;margin-bottom:20px">
-      <h2 style="margin:0;color:#6366f1">DKFlow</h2>
+export function wrap(body: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+  <body style="margin:0;padding:0;background-color:#0f0f13;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+    <div style="max-width:600px;margin:0 auto;padding:32px 20px">
+      <div style="background:#1a1a24;border-radius:12px;border:1px solid #2a2a3a;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:24px 28px;text-align:center">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px">⚡ DKFlow</h1>
+        </div>
+        <div style="padding:28px;color:#e2e2ec;font-size:15px;line-height:1.7">
+          ${body}
+        </div>
+        <div style="padding:16px 28px;border-top:1px solid #2a2a3a;text-align:center">
+          <p style="margin:0;color:#6b6b80;font-size:11px">This is an automated notification from DKFlow · <a href="${process.env.APP_URL || 'http://72.61.173.123'}" style="color:#818cf8;text-decoration:none">Open DKFlow</a></p>
+        </div>
+      </div>
     </div>
-    ${body}
-    <div style="margin-top:30px;padding-top:10px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:12px">
-      This is an automated notification from DKFlow.
-    </div>
-  </div>`;
+  </body></html>`;
 }
+
+function actionButton(url: string, label: string): string {
+  return `<a href="${url}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin-top:16px">${label}</a>`;
+}
+
+const APP_URL = process.env.APP_URL || "http://72.61.173.123";
 
 export async function sendTaskAssignedEmail(to: string, data: { assignerName: string; taskTitle: string; taskKey: string; taskUrl?: string }): Promise<boolean> {
   const html = wrap(`
-    <p><strong>${data.assignerName}</strong> assigned you to <strong>${data.taskKey}</strong>:</p>
-    <p style="font-size:16px">${data.taskTitle}</p>
-    ${data.taskUrl ? `<a href="${data.taskUrl}" style="display:inline-block;padding:8px 16px;background:#6366f1;color:white;border-radius:6px;text-decoration:none">View Task</a>` : ""}
+    <p style="color:#a5a5bf;margin:0 0 4px">📋 Task Assigned</p>
+    <p><strong style="color:#c4b5fd">${data.assignerName}</strong> assigned you to <strong style="color:#818cf8">${data.taskKey}</strong>:</p>
+    <div style="background:#12121a;border-left:3px solid #6366f1;padding:12px 16px;border-radius:6px;margin:12px 0">
+      <p style="margin:0;font-size:16px;color:#ffffff">${data.taskTitle}</p>
+    </div>
+    ${actionButton(data.taskUrl || `${APP_URL}/home`, "View Task")}
   `);
   return sendMail(to, `[DKFlow] You were assigned to ${data.taskKey}`, html);
 }
 
 export async function sendCommentEmail(to: string, data: { commenterName: string; taskTitle: string; taskKey: string; commentSnippet: string }): Promise<boolean> {
   const html = wrap(`
-    <p><strong>${data.commenterName}</strong> commented on <strong>${data.taskKey}</strong> — ${data.taskTitle}:</p>
-    <blockquote style="border-left:3px solid #6366f1;padding-left:12px;color:#4b5563">${data.commentSnippet}</blockquote>
+    <p style="color:#a5a5bf;margin:0 0 4px">💬 New Mention</p>
+    <p><strong style="color:#c4b5fd">${data.commenterName}</strong> mentioned you on <strong style="color:#818cf8">${data.taskKey}</strong> — ${data.taskTitle}:</p>
+    <div style="background:#12121a;border-left:3px solid #8b5cf6;padding:12px 16px;border-radius:6px;margin:12px 0">
+      <p style="margin:0;color:#d4d4e0;font-style:italic">"${data.commentSnippet}"</p>
+    </div>
+    ${actionButton(`${APP_URL}/home`, "View Comment")}
   `);
-  return sendMail(to, `[DKFlow] New comment on ${data.taskKey}`, html);
+  return sendMail(to, `[DKFlow] You were mentioned in ${data.taskKey}`, html);
 }
 
 export async function sendDueDateReminderEmail(to: string, data: { taskTitle: string; taskKey: string; dueDate: string }): Promise<boolean> {
   const html = wrap(`
-    <p>Reminder: <strong>${data.taskKey}</strong> is due on <strong>${data.dueDate}</strong>.</p>
-    <p style="font-size:16px">${data.taskTitle}</p>
+    <p style="color:#a5a5bf;margin:0 0 4px">⏰ Due Tomorrow</p>
+    <p><strong style="color:#818cf8">${data.taskKey}</strong> is due on <strong style="color:#fbbf24">${data.dueDate}</strong>.</p>
+    <div style="background:#12121a;border-left:3px solid #f59e0b;padding:12px 16px;border-radius:6px;margin:12px 0">
+      <p style="margin:0;font-size:16px;color:#ffffff">${data.taskTitle}</p>
+    </div>
+    ${actionButton(`${APP_URL}/home`, "View Task")}
   `);
   return sendMail(to, `[DKFlow] ${data.taskKey} is due soon`, html);
 }
 
-export async function sendInviteEmail(to: string, data: { inviterName: string; workspaceName: string; inviteCode: string; inviteUrl?: string }): Promise<boolean> {
-  const baseUrl = process.env.APP_URL || "http://72.61.173.123";
-  const url = data.inviteUrl || `${baseUrl}/invite/${data.inviteCode}`;
+export async function sendApprovalRequestEmail(to: string, data: { requesterName: string; taskTitle: string; taskKey: string }): Promise<boolean> {
   const html = wrap(`
-    <p><strong>${data.inviterName}</strong> invited you to join <strong>${data.workspaceName}</strong> on DKFlow.</p>
-    <a href="${url}" style="display:inline-block;padding:10px 20px;background:#6366f1;color:white;border-radius:6px;text-decoration:none">Accept Invite</a>
-    <p style="color:#9ca3af;font-size:12px">Invite code: ${data.inviteCode}</p>
+    <p style="color:#a5a5bf;margin:0 0 4px">✅ Approval Requested</p>
+    <p><strong style="color:#c4b5fd">${data.requesterName}</strong> requested your approval for <strong style="color:#818cf8">${data.taskKey}</strong>:</p>
+    <div style="background:#12121a;border-left:3px solid #22c55e;padding:12px 16px;border-radius:6px;margin:12px 0">
+      <p style="margin:0;font-size:16px;color:#ffffff">${data.taskTitle}</p>
+    </div>
+    ${actionButton(`${APP_URL}/home`, "Review Task")}
+  `);
+  return sendMail(to, `[DKFlow] Approval requested for ${data.taskKey}`, html);
+}
+
+export async function sendInviteEmail(to: string, data: { inviterName: string; workspaceName: string; inviteCode: string; inviteUrl?: string }): Promise<boolean> {
+  const url = data.inviteUrl || `${APP_URL}/invite/${data.inviteCode}`;
+  const html = wrap(`
+    <p style="color:#a5a5bf;margin:0 0 4px">🎉 Workspace Invitation</p>
+    <p><strong style="color:#c4b5fd">${data.inviterName}</strong> invited you to join <strong style="color:#818cf8">${data.workspaceName}</strong> on DKFlow.</p>
+    ${actionButton(url, "Accept Invite")}
+    <p style="color:#6b6b80;font-size:12px;margin-top:16px">Invite code: ${data.inviteCode}</p>
   `);
   return sendMail(to, `[DKFlow] You're invited to ${data.workspaceName}`, html);
 }
 
 export async function sendPasswordResetEmail(to: string, data: { resetUrl: string }): Promise<boolean> {
   const html = wrap(`
+    <p style="color:#a5a5bf;margin:0 0 4px">🔑 Password Reset</p>
     <p>You requested a password reset for your DKFlow account.</p>
-    <a href="${data.resetUrl}" style="display:inline-block;padding:10px 20px;background:#6366f1;color:white;border-radius:6px;text-decoration:none;margin:16px 0">Reset Password</a>
-    <p style="color:#9ca3af;font-size:13px">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+    ${actionButton(data.resetUrl, "Reset Password")}
+    <p style="color:#6b6b80;font-size:13px;margin-top:16px">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
   `);
   return sendMail(to, `[DKFlow] Password Reset`, html);
 }

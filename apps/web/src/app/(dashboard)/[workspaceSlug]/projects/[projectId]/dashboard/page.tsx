@@ -30,6 +30,7 @@ import { CompletionTrendWidget } from "@/components/dashboard/CompletionTrendWid
 import { SprintHealthWidget } from "@/components/dashboard/SprintHealthWidget";
 import { VelocityWidget } from "@/components/dashboard/VelocityWidget";
 import { BurndownWidget } from "@/components/dashboard/BurndownWidget";
+import { SlaComplianceWidget } from "@/components/dashboard/SlaComplianceWidget";
 
 const WIDGET_CATALOG = [
   { type: "task_summary", name: "Task Summary", desc: "Overview of total, in progress, done, and overdue tasks", icon: "📊" },
@@ -44,6 +45,7 @@ const WIDGET_CATALOG = [
   { type: "sprint_health", name: "Sprint Health", desc: "Active sprint progress and days remaining", icon: "🏃" },
   { type: "velocity", name: "Velocity", desc: "Points completed per sprint", icon: "🚀" },
   { type: "burndown", name: "Burndown Chart", desc: "Remaining tasks over time", icon: "📉" },
+  { type: "sla_compliance", name: "SLA Compliance", desc: "SLA compliance stats across workspace", icon: "⏱️" },
 ] as const;
 
 const WIDGET_COMPONENTS: Record<string, React.ComponentType<{ projectId: string }>> = {
@@ -59,6 +61,7 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<{ projectId: string 
   sprint_health: SprintHealthWidget,
   velocity: VelocityWidget,
   burndown: BurndownWidget,
+  sla_compliance: SlaComplianceWidget,
 };
 
 const WIDGET_TITLES: Record<string, string> = Object.fromEntries(WIDGET_CATALOG.map((w) => [w.type, w.name]));

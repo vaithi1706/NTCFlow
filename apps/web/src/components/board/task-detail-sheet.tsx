@@ -32,8 +32,12 @@ import { AiTaskHelper } from "@/components/ai/ai-task-helper";
 import { AiBreakdownDialog } from "@/components/ai/ai-breakdown-dialog";
 import { AiEstimateButton } from "@/components/ai/ai-estimate-button";
 import { AiAutoTriage } from "@/components/ai/ai-auto-triage";
+import { TaskApproval } from "@/components/shared/task-approval";
+import { MentionTextarea } from "@/components/shared/mention-textarea";
 import { TaskLinks } from "@/components/tasks/task-links";
 import { TaskWatchers } from "@/components/tasks/task-watchers";
+import { VoteButton } from "@/components/shared/vote-button";
+import { SlaIndicator } from "@/components/shared/sla-indicator";
 import { trpc, trpcVanilla } from "@/lib/api/trpc";
 import { useAuthStore } from "@/stores/auth-store";
 import type { BoardColumn, TaskWithRelations } from "@dkflow/shared";
@@ -393,6 +397,8 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
                   onCreated={() => utils.task.getById.invalidate({ id: task.id })}
                 />
                 <TaskWatchers taskId={task.id} workspaceId={workspaceId} />
+                <VoteButton taskId={task.id} />
+                <SlaIndicator taskId={task.id} />
               </div>
             </div>
             <DropdownMenu>
@@ -919,6 +925,9 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
               </Select>
             </div>
 
+            {/* Approvals */}
+            <TaskApproval taskId={task.id} projectId={task.projectId} workspaceId={workspaceId} />
+
             {/* Attachments */}
             <div>
               <h4 className="text-sm font-medium mb-2">Attachments</h4>
@@ -958,7 +967,13 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
                       </span>
                     </div>
                     <div className="text-sm text-foreground/90 prose prose-sm prose-invert max-w-none">
-                      <ReactMarkdown>{comment.content}</ReactMarkdown>
+                      {comment.content.split(/(@\w+)/g).map((part: string, i: number) =>
+                        part.startsWith("@") ? (
+                          <span key={i} className="text-blue-400 font-medium bg-blue-400/10 rounded px-0.5">{part}</span>
+                        ) : (
+                          <ReactMarkdown key={i}>{part}</ReactMarkdown>
+                        )
+                      )}
                     </div>
                     {/* Reactions */}
                     <div className="flex flex-wrap items-center gap-1 mt-1.5">
@@ -1019,11 +1034,11 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
                 <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">U</AvatarFallback>
               </Avatar>
               <div className="flex-1 space-y-2">
-                <Textarea
+                <MentionTextarea
                   value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment... Use @username to mention"
-                  className="min-h-[60px] resize-none"
+                  onChange={setNewComment}
+                  placeholder="Write a comment... Type @ to mention someone"
+                  projectId={task.projectId}
                 />
                 <Button
                   size="sm"

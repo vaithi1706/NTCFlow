@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/api/trpc";
 import { useProjectData } from "@/hooks/use-project-data";
 import { toast } from "sonner";
-import { Plus, Play, CheckCircle2, Loader2, Zap, Calendar, Target, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Plus, Play, CheckCircle2, Loader2, Zap, Calendar, Target, ChevronDown, ChevronUp, X, BarChart3 } from "lucide-react";
 import { PdfExportButton } from "@/components/shared/pdf-export-button";
 import { AiRiskPredictor } from "@/components/ai/ai-risk-predictor";
 import { AiStandup } from "@/components/ai/ai-standup";
@@ -147,6 +147,7 @@ export default function SprintsPage() {
                     startLoading={startMutation.isPending}
                     completeLoading={completeMutation.isPending}
                     projectId={projectId}
+                    workspaceSlug={workspaceSlug}
                   />
                 ))}
                 {((tab === "all" ? sprints : tab === "active" ? activeSprints : tab === "planned" ? plannedSprints : completedSprints)?.length || 0) === 0 && (
@@ -162,7 +163,7 @@ export default function SprintsPage() {
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Create Sprint</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><Label>Sprint Name</Label><Input placeholder="Sprint 1" value={name} onChange={e => setName(e.target.value)} autoFocus /></div>
@@ -185,8 +186,9 @@ export default function SprintsPage() {
 }
 
 function SprintCard({ sprint, expanded, onToggle, onStart, onComplete, startLoading, completeLoading, projectId }: {
-  sprint: any; expanded: boolean; onToggle: () => void; onStart: () => void; onComplete: () => void; startLoading: boolean; completeLoading: boolean; projectId: string;
+  sprint: any; expanded: boolean; onToggle: () => void; onStart: () => void; onComplete: () => void; startLoading: boolean; completeLoading: boolean; projectId: string; workspaceSlug?: string;
 }) {
+  const router = useRouter();
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const totalTasks = sprint.tasks?.length || 0;
   const doneTasks = sprint.tasks?.filter((st: any) => st.task.status === "done").length || 0;
@@ -259,6 +261,9 @@ function SprintCard({ sprint, expanded, onToggle, onStart, onComplete, startLoad
               <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} /></div>
             </div>
             <div className="flex items-center gap-1">
+              <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); router.push(`/${workspaceSlug}/projects/${projectId}/sprints/${sprint.id}/charts`); }}>
+                <BarChart3 className="h-3 w-3 mr-1" />Charts
+              </Button>
               {!sprint.isActive && !sprint.isCompleted && (
                 <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); onStart(); }} disabled={startLoading}>
                   <Play className="h-3 w-3 mr-1" />Start

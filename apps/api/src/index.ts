@@ -18,6 +18,7 @@ import { redis } from "./utils/redis.js";
 import { prisma } from "./lib/prisma.js";
 import { verifyToken } from "./lib/jwt.js";
 import { initEmail } from "./services/email.js";
+import { sendDueDateReminders } from "./services/emailNotifier.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -25,7 +26,7 @@ const PORT = parseInt(process.env.PORT || "4000", 10);
 
 // Security & parsing
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: ["https://dkflow.in", "https://www.dkflow.in", "https://admin.dkflow.in:8443", "http://localhost:3000"], credentials: true }));
 app.use(compression());
 app.use(morgan("combined", { stream: { write: (message: string) => logger.info(message.trim()) } }));
 app.use(express.json({ limit: "10mb" }));
@@ -402,7 +403,7 @@ const server = http.createServer(app);
 
 // Socket.IO
 const io = new SocketIOServer(server, {
-  cors: { origin: true, credentials: true },
+  cors: { origin: ["https://dkflow.in", "https://www.dkflow.in", "https://admin.dkflow.in:8443", "http://localhost:3000"], credentials: true },
   path: "/api/socket.io",
 });
 
@@ -439,7 +440,39 @@ io.on("connection", async (socket) => {
   socket.on("join:project", (projectId: string) => socket.join(`project:${projectId}`));
   socket.on("leave:project", (projectId: string) => socket.leave(`project:${projectId}`));
 
+  // ─── Presence: page-level viewing ───
+  const viewingPages = new Set<string>();
+
+  socket.on("presence:viewing", (data: { page: string; userName?: string; avatarUrl?: string }) => {
+    const { page, userName, avatarUrl } = data;
+    viewingPages.add(page);
+    socket.join(`viewing:${page}`);
+    io.to(`viewing:${page}`).emit("presence:viewers", {
+      page,
+      userId,
+      userName: userName || "User",
+      avatarUrl: avatarUrl || null,
+      action: "join",
+    });
+  });
+
+  socket.on("presence:leave", (data: { page: string }) => {
+    viewingPages.delete(data.page);
+    socket.leave(`viewing:${data.page}`);
+    io.to(`viewing:${data.page}`).emit("presence:viewers", {
+      page: data.page,
+      userId,
+      action: "leave",
+    });
+  });
+
   socket.on("disconnect", () => {
+    // Leave all viewing pages
+    for (const page of viewingPages) {
+      io.to(`viewing:${page}`).emit("presence:viewers", { page, userId, action: "leave" });
+    }
+    viewingPages.clear();
+
     const sockets = onlineUsers.get(userId);
     if (sockets) {
       sockets.delete(socket.id);
@@ -463,6 +496,15 @@ server.listen(PORT, async () => {
   logger.info(`   Health: http://localhost:${PORT}/api/health`);
   logger.info(`   tRPC:   http://localhost:${PORT}/api/trpc`);
   await initEmail();
+
+  // Daily due-date reminders — check every hour, send once at ~8 AM UTC
+  setInterval(async () => {
+    const hour = new Date().getUTCHours();
+    if (hour === 8) {
+      logger.info("[cron] Running daily due-date reminder check");
+      await sendDueDateReminders().catch((err) => logger.error("[cron] Due date reminders failed", err));
+    }
+  }, 3600000); // every hour
 });
 
 export { io };

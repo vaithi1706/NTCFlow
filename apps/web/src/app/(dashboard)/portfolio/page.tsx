@@ -98,7 +98,7 @@ export default function PortfolioPage() {
   return (
     <>
       <TopBar title="Portfolio" />
-      <div className="p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[

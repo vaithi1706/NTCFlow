@@ -37,6 +37,9 @@ import { adminRouter } from "./admin.router.js";
 import { goalRouter } from "./goal.router.js";
 import { approvalRouter } from "./approval.router.js";
 import { workloadRouter } from "./workload.router.js";
+import { slaRouter } from "./sla.router.js";
+import { sprintChartRouter } from "./sprintChart.router.js";
+import { waitlistRouter } from "./waitlist.router.js";
 
 export const appRouter = router({
   auth: authRouter,
@@ -77,6 +80,9 @@ export const appRouter = router({
   goal: goalRouter,
   approval: approvalRouter,
   workload: workloadRouter,
+  sprintChart: sprintChartRouter,
+  sla: slaRouter,
+  waitlist: waitlistRouter,
 });
 
 export type AppRouter = typeof appRouter;

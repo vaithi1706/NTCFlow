@@ -7,7 +7,7 @@ import { Toaster } from "sonner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" storageKey="dkflow-theme" enableSystem={false} disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="dark" storageKey="dkflow-theme" enableSystem disableTransitionOnChange>
       <TooltipProvider delayDuration={200}>
         <TRPCProvider>
           {children}

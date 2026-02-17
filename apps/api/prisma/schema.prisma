@@ -163,6 +163,7 @@ model User {
   dashboardWidgets        DashboardWidget[]
   forms                   Form[]
   taskTemplates           TaskTemplate[]
+  taskVotes               TaskVote[]
 
   @@index([googleId], map: "IX_Users_GoogleId")
   @@map("Users")
@@ -243,6 +244,7 @@ model Workspace {
   integrations  Integration[]
   taskTemplates TaskTemplate[]
   subscription  Subscription?
+  slaPolicies   SlaPolicy[]
 
   @@index([ownerId])
   @@index([slug])
@@ -483,6 +485,8 @@ model Task {
   archivedAt         DateTime?  @map("ArchivedAt") @db.Timestamptz
   deletedAt          DateTime?  @map("DeletedAt") @db.Timestamptz
   createdAt          DateTime   @default(now()) @map("CreatedAt") @db.Timestamptz
+  slaBreachedAt      DateTime?  @map("SlaBreachedAt") @db.Timestamptz
+  slaRespondedAt     DateTime?  @map("SlaRespondedAt") @db.Timestamptz
   updatedAt          DateTime   @updatedAt @map("UpdatedAt") @db.Timestamptz
 
   project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -504,6 +508,7 @@ model Task {
   customFieldValues CustomFieldValue[]
   taskVersions      TaskVersion[]
   gitCommits        GitCommit[]
+  votes             TaskVote[]
 
   @@index([projectId])
   @@index([columnId])
@@ -746,12 +751,31 @@ model Sprint {
   createdAt   DateTime  @default(now()) @db.Timestamptz
   updatedAt   DateTime  @updatedAt @db.Timestamptz
 
-  project Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  tasks   SprintTask[]
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     SprintTask[]
+  snapshots SprintSnapshot[]
 
   @@index([projectId])
   @@index([isActive])
   @@map("Sprints")
+}
+
+model SprintSnapshot {
+  id              String   @id @default(uuid()) @db.Uuid
+  sprintId        String   @db.Uuid
+  date            DateTime @db.Date
+  totalTasks      Int
+  completedTasks  Int
+  totalPoints     Int
+  completedPoints Int
+  statusBreakdown Json?
+  createdAt       DateTime @default(now()) @db.Timestamptz
+
+  sprint Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+
+  @@unique([sprintId, date])
+  @@index([sprintId])
+  @@map("SprintSnapshots")
 }
 
 model SprintTask {
@@ -1329,4 +1353,51 @@ model TaskApproval {
   @@index([approverId])
   @@index([requestedById])
   @@map("TaskApprovals")
+}
+
+// ─── SLA POLICIES ───────────────────────────────────────
+
+model SlaPolicy {
+  id                  String   @id @default(uuid()) @map("Id") @db.Uuid
+  workspaceId         String   @map("WorkspaceId") @db.Uuid
+  name                String   @map("Name") @db.VarChar(100)
+  priority            Priority @map("Priority")
+  responseTimeHours   Float    @map("ResponseTimeHours")
+  resolutionTimeHours Float    @map("ResolutionTimeHours")
+  createdAt           DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, priority])
+  @@index([workspaceId])
+  @@map("SlaPolicies")
+}
+
+// ─── TASK VOTES ─────────────────────────────────────────
+
+model TaskVote {
+  id        String   @id @default(uuid()) @map("Id") @db.Uuid
+  taskId    String   @map("TaskId") @db.Uuid
+  userId    String   @map("UserId") @db.Uuid
+  createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+  @@map("TaskVotes")
+}
+
+// ─── WAITLIST ───────────────────────────────────────────
+
+model Waitlist {
+  id        String   @id @default(uuid()) @map("Id") @db.Uuid
+  email     String   @unique @map("Email")
+  name      String?  @map("Name")
+  company   String?  @map("Company")
+  createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+
+  @@map("Waitlist")
 }

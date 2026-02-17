@@ -187,7 +187,7 @@ export function BoardColumn({ column, tasks, project, onTaskClick, onTaskCreate,
 
         {/* Tasks */}
         {!collapsed && (
-          <div className="flex-1 overflow-y-auto space-y-2 min-h-[80px] pb-2">
+          <div className="flex-1 overflow-y-auto space-y-2 min-h-[120px] pb-2">
             {tasks.map((task) => (
               <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} workspaceId={workspaceId} onUpdated={onTaskUpdated} />
             ))}

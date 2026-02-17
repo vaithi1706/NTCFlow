@@ -167,7 +167,7 @@ export default function TeamsPage() {
 
         {/* Create Team Dialog */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Create Team</DialogTitle></DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
@@ -576,7 +576,7 @@ function MembersTab({ teamId, team, workspaceId }: { teamId: string; team: any; 
 
       {/* Add Member Dialog */}
       <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Add Member to Team</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -683,7 +683,7 @@ function ProjectsTab({ teamId, team, workspaceId }: { teamId: string; team: any;
 
       {/* Assign Dialog */}
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Assign Project to Team</DialogTitle></DialogHeader>
           <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
             <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
@@ -705,12 +705,12 @@ function ProjectsTab({ teamId, team, workspaceId }: { teamId: string; team: any;
 
 /* ============== Activity Tab ============== */
 function ActivityTab({ teamId }: { teamId: string }) {
-  const [filterUserId, setFilterUserId] = useState<string>("");
+  const [filterUserId, setFilterUserId] = useState<string>("all");
 
   const { data: activities, isLoading } = trpc.team.getActivity.useQuery({
     teamId,
     limit: 50,
-    userId: filterUserId || undefined,
+    userId: filterUserId === "all" ? undefined : filterUserId,
   });
   const { data: team } = trpc.team.getById.useQuery({ id: teamId });
 
@@ -723,7 +723,7 @@ function ActivityTab({ teamId }: { teamId: string }) {
             <SelectValue placeholder="All members" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All members</SelectItem>
+            <SelectItem value="all">All members</SelectItem>
             {team?.members.map((m: any) => (
               <SelectItem key={m.userId} value={m.userId}>{m.user.name}</SelectItem>
             ))}

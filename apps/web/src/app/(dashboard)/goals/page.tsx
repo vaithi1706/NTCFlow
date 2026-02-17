@@ -246,7 +246,7 @@ export default function GoalsPage() {
 
       {/* Create Objective Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Create Objective</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -296,7 +296,7 @@ export default function GoalsPage() {
 
       {/* Create Key Result Dialog */}
       <Dialog open={!!createKROpen} onOpenChange={() => setCreateKROpen(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Add Key Result</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">

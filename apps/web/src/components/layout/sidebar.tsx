@@ -8,7 +8,7 @@ import {
   Home, Star, Plus, ChevronLeft, ChevronDown, LogOut,
   Settings, ChevronsLeft, LayoutGrid, User as UserIcon, Loader2, Users,
   ChevronsUpDown, Building2, BarChart3, UsersRound, Shield, Briefcase,
-  Target, ClipboardCheck,
+  Target, ClipboardCheck, Bell, Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui-store";
@@ -35,6 +35,8 @@ import { Sparkles, Crown } from "lucide-react";
 
 const navItems = [
   { icon: Home, label: "Home", href: "/home" },
+  { icon: Search, label: "Search", href: "/search" },
+  { icon: Bell, label: "Notifications", href: "/notifications", badge: true },
   { icon: LayoutGrid, label: "My Work", href: "/my-work" },
   { icon: Briefcase, label: "Portfolio", href: "/portfolio" },
   { icon: Users, label: "Members", href: "/members" },
@@ -85,6 +87,10 @@ export function Sidebar() {
       return next;
     });
   }, []);
+
+  const { data: unreadCount } = trpc.notification.getUnreadCount.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
 
   const { data: workspaces } = trpc.workspace.list.useQuery(undefined, {
     enabled: !!workspaceId,
@@ -233,6 +239,7 @@ export function Sidebar() {
                 label={item.label}
                 active={active}
                 collapsed={!sidebarOpen}
+                count={(item as any).badge ? (unreadCount?.count || undefined) : undefined}
               />
             );
           })}
@@ -401,7 +408,7 @@ export function Sidebar() {
 
       {/* Create Project Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Project</DialogTitle>
           </DialogHeader>

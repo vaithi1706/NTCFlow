@@ -5,12 +5,16 @@ import {
   DndContext,
   DragOverlay,
   closestCorners,
+  closestCenter,
+  rectIntersection,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -137,6 +141,16 @@ export function BoardView({ columns, tasks, project, onTaskClick, onTaskCreate, 
     if (task) setActiveTask(task);
   };
 
+  // Custom collision detection: try pointerWithin first (most accurate), 
+  // then fall back to closestCorners for columns
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    // First try pointer-based detection
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    // Fall back to closestCorners  
+    return closestCorners(args);
+  }, []);
+
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveTask(null);
     const { active, over } = event;
@@ -145,18 +159,37 @@ export function BoardView({ columns, tasks, project, onTaskClick, onTaskCreate, 
     const taskId = active.id as string;
     const overId = over.id as string;
 
+    // Don't do anything if dropped on itself in same position
+    if (taskId === overId) return;
+
     let targetColumnId: string;
     const isColumn = columns.some((c) => c.id === overId);
     if (isColumn) {
       targetColumnId = overId;
     } else {
       const overTask = tasks.find((t) => t.id === overId);
-      if (!overTask) return;
+      if (!overTask?.columnId) return;
       targetColumnId = overTask.columnId;
     }
 
+    const currentTask = tasks.find((t) => t.id === taskId);
     const columnTasks = getTasksForColumn(targetColumnId);
-    const newPosition = isColumn ? columnTasks.length : columnTasks.findIndex((t) => t.id === overId);
+    
+    let newPosition: number;
+    if (isColumn) {
+      // Dropped on column itself (empty area) — put at end
+      newPosition = columnTasks.length;
+    } else {
+      // Dropped on a task — insert at that task's position
+      const overIndex = columnTasks.findIndex((t) => t.id === overId);
+      newPosition = overIndex >= 0 ? overIndex : columnTasks.length;
+    }
+
+    // Skip if same column and same position
+    if (currentTask?.columnId === targetColumnId) {
+      const currentIndex = columnTasks.findIndex((t) => t.id === taskId);
+      if (currentIndex === newPosition) return;
+    }
 
     onTaskMove(taskId, targetColumnId, Math.max(0, newPosition));
   };
@@ -175,7 +208,7 @@ export function BoardView({ columns, tasks, project, onTaskClick, onTaskCreate, 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

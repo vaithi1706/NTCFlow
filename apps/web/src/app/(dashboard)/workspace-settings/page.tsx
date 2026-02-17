@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import {
   Loader2, Building2, CreditCard, Users, Trash2, AlertTriangle,
   Shield, Plus, Pencil, Lock, Check, X, Webhook, Key, Copy, Eye, EyeOff,
-  Zap, Send, MessageSquare, FileText,
+  Zap, Send, MessageSquare, FileText, Clock,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -92,6 +92,7 @@ export default function WorkspaceSettingsPage() {
             <TabsTrigger value="integrations" className="gap-1.5"><Webhook className="h-3.5 w-3.5" /> Integrations</TabsTrigger>
             <TabsTrigger value="templates" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Task Templates</TabsTrigger>
             <TabsTrigger value="billing" className="gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Billing</TabsTrigger>
+            <TabsTrigger value="sla" className="gap-1.5"><Clock className="h-3.5 w-3.5" /> SLA</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-6">
@@ -247,6 +248,10 @@ export default function WorkspaceSettingsPage() {
 
           <TabsContent value="billing">
             <BillingTab workspaceId={workspaceId || ""} />
+          </TabsContent>
+
+          <TabsContent value="sla">
+            <SlaTab workspaceId={workspaceId || ""} />
           </TabsContent>
         </Tabs>
 
@@ -960,7 +965,7 @@ function IntegrationsTab({ workspaceId }: { workspaceId: string }) {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Integration</DialogTitle>
           </DialogHeader>
@@ -1355,6 +1360,144 @@ function BillingTab({ workspaceId }: { workspaceId: string }) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-zinc-500 italic">No invoices yet</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function SlaTab({ workspaceId }: { workspaceId: string }) {
+  const { data: policies, isLoading } = trpc.sla.list.useQuery({ workspaceId });
+  const utils = trpc.useUtils();
+
+  const [name, setName] = useState("");
+  const [priority, setPriority] = useState("urgent");
+  const [responseHours, setResponseHours] = useState("4");
+  const [resolutionHours, setResolutionHours] = useState("24");
+
+  const createMutation = trpc.sla.create.useMutation({
+    onSuccess: () => {
+      utils.sla.list.invalidate({ workspaceId });
+      setName(""); setResponseHours("4"); setResolutionHours("24");
+      toast.success("SLA policy created");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteMutation = trpc.sla.delete.useMutation({
+    onSuccess: () => {
+      utils.sla.list.invalidate({ workspaceId });
+      toast.success("SLA policy deleted");
+    },
+  });
+
+  const { data: dashboard } = trpc.sla.getDashboard.useQuery({ workspaceId });
+
+  if (isLoading) return <Skeleton className="h-48 w-full" />;
+
+  return (
+    <div className="space-y-6">
+      {/* Dashboard */}
+      {dashboard && dashboard.total > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" /> SLA Compliance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold">{dashboard.compliancePercent}%</p>
+                <p className="text-xs text-muted-foreground">Compliance</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-500">{dashboard.met}</p>
+                <p className="text-xs text-muted-foreground">Met</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-yellow-500">{dashboard.atRisk}</p>
+                <p className="text-xs text-muted-foreground">At Risk</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-red-500">{dashboard.breached}</p>
+                <p className="text-xs text-muted-foreground">Breached</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Existing Policies */}
+      <Card>
+        <CardHeader>
+          <CardTitle>SLA Policies</CardTitle>
+          <CardDescription>Define response and resolution time targets per priority</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {(policies || []).length === 0 && (
+            <p className="text-sm text-muted-foreground">No SLA policies defined yet.</p>
+          )}
+          {(policies || []).map((p: any) => (
+            <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <p className="font-medium">{p.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Priority: {p.priority} · Response: {p.responseTimeHours}h · Resolution: {p.resolutionTimeHours}h
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate({ id: p.id })}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Add New Policy */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Add SLA Policy</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Urgent SLA" />
+            </div>
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Response Time (hours)</Label>
+              <Input type="number" value={responseHours} onChange={(e) => setResponseHours(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Resolution Time (hours)</Label>
+              <Input type="number" value={resolutionHours} onChange={(e) => setResolutionHours(e.target.value)} />
+            </div>
+          </div>
+          <Button
+            onClick={() => createMutation.mutate({
+              workspaceId,
+              name: name || `${priority} SLA`,
+              priority: priority as any,
+              responseTimeHours: parseFloat(responseHours) || 4,
+              resolutionTimeHours: parseFloat(resolutionHours) || 24,
+            })}
+            disabled={createMutation.isPending}
+          >
+            {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Plus className="mr-2 h-4 w-4" /> Add Policy
+          </Button>
         </CardContent>
       </Card>
     </div>

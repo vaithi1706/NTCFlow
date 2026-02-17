@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc.js";
+import { notifyApprovalRequested } from "../services/emailNotifier.js";
 
 export const approvalRouter = router({
   request: protectedProcedure
@@ -9,13 +10,20 @@ export const approvalRouter = router({
       approverId: z.string().uuid(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.prisma.taskApproval.create({
+      const approval = await ctx.prisma.taskApproval.create({
         data: {
           taskId: input.taskId,
           requestedById: ctx.user.userId,
           approverId: input.approverId,
         },
       });
+      // Email the approver
+      const task = await ctx.prisma.task.findUnique({ where: { id: input.taskId }, select: { title: true, taskNumber: true, project: { select: { taskPrefix: true } } } });
+      const requester = await ctx.prisma.user.findUnique({ where: { id: ctx.user.userId }, select: { name: true } });
+      if (task) {
+        notifyApprovalRequested(input.approverId, requester?.name || "Someone", task.title, `${task.project.taskPrefix}-${task.taskNumber}`).catch(() => {});
+      }
+      return approval;
     }),
 
   respond: protectedProcedure

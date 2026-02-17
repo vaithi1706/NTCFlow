@@ -8,8 +8,9 @@ import { AvatarGroup } from "@/components/shared/avatar-group";
 import { AssigneePicker } from "@/components/shared/assignee-picker";
 import { PriorityBadge } from "@/components/shared/priority-badge";
 import { DueDate } from "@/components/shared/due-date";
-import { MessageSquare, Paperclip, Repeat } from "lucide-react";
+import { ListTree, MessageSquare, Paperclip, Repeat, ThumbsUp } from "lucide-react";
 import { TaskTypeBadge } from "@/components/shared/task-type-badge";
+import { SlaIndicator } from "@/components/shared/sla-indicator";
 import type { TaskWithRelations } from "@dkflow/shared";
 
 interface TaskCardProps {
@@ -112,7 +113,23 @@ export function TaskCard({ task, onClick, overlay, workspaceId, onUpdated }: Tas
           <Repeat className="h-3 w-3 text-muted-foreground" />
         )}
 
+        {(task as any)._count?.subtasks > 0 && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+            <ListTree className="h-3 w-3" />
+            {(task as any)._count.subtasks}
+          </span>
+        )}
+
         {task.dueDate && <DueDate date={task.dueDate} compact />}
+
+        <SlaIndicator taskId={task.id} compact />
+
+        {(task as any)._count?.votes > 0 && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+            <ThumbsUp className="h-3 w-3" />
+            {(task as any)._count.votes}
+          </span>
+        )}
 
         <div className="flex-1" />
 

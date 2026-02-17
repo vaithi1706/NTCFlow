@@ -35,6 +35,18 @@ export const notificationRouter = router({
     return { count };
   }),
 
+  archive: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.prisma.notification.delete({ where: { id: input.id } });
+      return { success: true };
+    }),
+
+  archiveAll: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.prisma.notification.deleteMany({ where: { userId: ctx.user.userId, isRead: true } });
+    return { success: true };
+  }),
+
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {

@@ -24,6 +24,7 @@ import { Settings, LogOut, Sun, Moon, Monitor, UserPlus, MessageSquare, AtSign, 
 import { trpc } from "@/lib/api/trpc";
 import { AiSearch } from "@/components/ai/ai-search";
 import { AiChatPanel } from "@/components/ai/ai-chat-panel";
+import { PresenceAvatars } from "@/components/shared/presence-avatars";
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from "date-fns";
 
 interface TopBarProps {
@@ -151,7 +152,7 @@ export function TopBar({
   };
 
   return (
-    <header className="h-14 border-b border-border bg-background flex items-center justify-between px-4 gap-4 flex-shrink-0">
+    <header className="h-14 border-b border-border bg-background flex items-center justify-between px-4 gap-4 flex-shrink-0 sticky top-0 z-30">
       {/* Left: Breadcrumbs */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -218,6 +219,24 @@ export function TopBar({
 
         {workspaceId && <AiSearch workspaceId={workspaceId} />}
         {workspaceId && <AiChatPanel projectId={resolvedProjectId} workspaceId={workspaceId} />}
+
+        {/* Theme Toggle */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{theme === "dark" ? "Light mode" : "Dark mode"}</TooltipContent>
+        </Tooltip>
+
+        {/* Presence Avatars */}
+        <PresenceAvatars page={resolvedProjectId ? `project:${resolvedProjectId}` : undefined} />
 
         {/* Notification Bell with Grouped Dropdown */}
         <Popover open={notifOpen} onOpenChange={setNotifOpen}>
