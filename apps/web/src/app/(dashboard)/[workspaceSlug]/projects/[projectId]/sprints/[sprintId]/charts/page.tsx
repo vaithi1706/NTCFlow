@@ -363,12 +363,12 @@ function CumulativeFlowChart({ sprintId }: { sprintId: string }) {
 // ─── Utility Components ─────────────────────────────────
 
 function ChartSkeleton() {
-  return <div className="h-[300px] rounded-lg bg-slate-900 animate-pulse" />;
+  return <div className="h-[300px] rounded-lg bg-muted animate-pulse" />;
 }
 
 function EmptyChart({ message }: { message: string }) {
   return (
-    <div className="h-[300px] rounded-lg bg-slate-900 flex items-center justify-center">
+    <div className="h-[300px] rounded-lg bg-muted flex items-center justify-center">
       <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
@@ -458,7 +458,7 @@ export default function SprintChartsPage() {
           </TabsList>
 
           <TabsContent value="burndown">
-            <Card className="p-6 bg-slate-950 border-slate-800">
+            <Card className="p-6 bg-background border-border">
               <h3 className="text-lg font-semibold mb-1">Burndown Chart</h3>
               <p className="text-xs text-muted-foreground mb-4">Track remaining work over time — ideally the actual line follows the ideal diagonal down to zero</p>
               <BurndownChart sprintId={sprintId} mode={mode} />
@@ -466,7 +466,7 @@ export default function SprintChartsPage() {
           </TabsContent>
 
           <TabsContent value="burnup">
-            <Card className="p-6 bg-slate-950 border-slate-800">
+            <Card className="p-6 bg-background border-border">
               <h3 className="text-lg font-semibold mb-1">Burnup Chart</h3>
               <p className="text-xs text-muted-foreground mb-4">See completed work vs total scope — watch for scope creep when the yellow line rises</p>
               <BurnupChart sprintId={sprintId} mode={mode} />
@@ -474,7 +474,7 @@ export default function SprintChartsPage() {
           </TabsContent>
 
           <TabsContent value="velocity">
-            <Card className="p-6 bg-slate-950 border-slate-800">
+            <Card className="p-6 bg-background border-border">
               <h3 className="text-lg font-semibold mb-1">Velocity Chart</h3>
               <p className="text-xs text-muted-foreground mb-4">Completed story points per sprint — helps predict future capacity</p>
               <VelocityChart projectId={projectId} />
@@ -482,7 +482,7 @@ export default function SprintChartsPage() {
           </TabsContent>
 
           <TabsContent value="flow">
-            <Card className="p-6 bg-slate-950 border-slate-800">
+            <Card className="p-6 bg-background border-border">
               <h3 className="text-lg font-semibold mb-1">Cumulative Flow Diagram</h3>
               <p className="text-xs text-muted-foreground mb-4">Distribution of tasks across statuses over time — widening bands indicate bottlenecks</p>
               <CumulativeFlowChart sprintId={sprintId} />

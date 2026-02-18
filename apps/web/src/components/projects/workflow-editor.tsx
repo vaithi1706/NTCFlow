@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/api/trpc";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  todo: { bg: "bg-slate-500/20", text: "text-slate-400", label: "TO DO" },
+  todo: { bg: "bg-slate-500/20", text: "text-muted-foreground", label: "TO DO" },
   in_progress: { bg: "bg-blue-500/20", text: "text-blue-400", label: "IN PROGRESS" },
   done: { bg: "bg-green-500/20", text: "text-green-400", label: "DONE" },
 };
@@ -169,7 +169,7 @@ export function WorkflowEditor({ projectId }: { projectId: string }) {
 
       {/* Add Status Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader><DialogTitle>Add Status</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -214,7 +214,7 @@ export function WorkflowEditor({ projectId }: { projectId: string }) {
 
       {/* Edit Status Dialog */}
       <Dialog open={!!editOpen} onOpenChange={() => setEditOpen(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader><DialogTitle>Edit Status</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">

@@ -164,6 +164,7 @@ model User {
   forms                   Form[]
   taskTemplates           TaskTemplate[]
   taskVotes               TaskVote[]
+  resourceCapacities      ResourceCapacity[]
 
   @@index([googleId], map: "IX_Users_GoogleId")
   @@map("Users")
@@ -244,7 +245,8 @@ model Workspace {
   integrations  Integration[]
   taskTemplates TaskTemplate[]
   subscription  Subscription?
-  slaPolicies   SlaPolicy[]
+  slaPolicies        SlaPolicy[]
+  resourceCapacities ResourceCapacity[]
 
   @@index([ownerId])
   @@index([slug])
@@ -375,6 +377,7 @@ model Project {
   inboundEmail     String?                 @map("InboundEmail")
   dashboardWidgets DashboardWidget[]
   forms            Form[]
+  crossProjectTags TaskProjectTag[]
 
   @@unique([workspaceId, slug])
   @@index([ownerId])
@@ -509,6 +512,7 @@ model Task {
   taskVersions      TaskVersion[]
   gitCommits        GitCommit[]
   votes             TaskVote[]
+  crossProjectTags  TaskProjectTag[]
 
   @@index([projectId])
   @@index([columnId])
@@ -1272,6 +1276,10 @@ model AiChatMessage {
 enum IntegrationType {
   slack
   teams
+  zapier
+  github
+  google_calendar
+  generic_webhook
 }
 
 model Integration {
@@ -1400,4 +1408,47 @@ model Waitlist {
   createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
 
   @@map("Waitlist")
+}
+
+// ─── CROSS-PROJECT TASK TAGGING ─────────────────────────
+
+// ─── RESOURCE CAPACITY ──────────────────────────────────
+
+model ResourceCapacity {
+  id              String   @id @default(uuid()) @map("Id") @db.Uuid
+  workspaceId     String   @map("WorkspaceId") @db.Uuid
+  userId          String   @map("UserId") @db.Uuid
+  hoursPerDay     Float    @default(8) @map("HoursPerDay")
+  workingDays     Int[]    @default([1, 2, 3, 4, 5]) @map("WorkingDays") // 0=Sun, 1=Mon...
+  timeOffStart    DateTime? @map("TimeOffStart") @db.Timestamptz
+  timeOffEnd      DateTime? @map("TimeOffEnd") @db.Timestamptz
+  notes           String?  @map("Notes")
+  createdAt       DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("UpdatedAt") @db.Timestamptz
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("ResourceCapacities")
+}
+
+// ─── CROSS-PROJECT TASK TAGGING ─────────────────────────
+
+model TaskProjectTag {
+  id        String   @id @default(uuid()) @map("Id") @db.Uuid
+  taskId    String   @map("TaskId") @db.Uuid
+  projectId String   @map("ProjectId") @db.Uuid
+  addedById String?  @map("AddedById") @db.Uuid
+  createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+
+  task    Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, projectId])
+  @@index([taskId])
+  @@index([projectId])
+  @@map("TaskProjectTags")
 }

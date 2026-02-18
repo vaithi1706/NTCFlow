@@ -32,11 +32,11 @@ app.use(morgan("combined", { stream: { write: (message: string) => logger.info(m
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Rate limiting — general: 100 req/min
-app.use(rateLimit({ windowMs: 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false, validate: { xForwardedForHeader: false } }));
+// Rate limiting — general: 300 req/min (increased for SPA with multiple API calls per page)
+app.use(rateLimit({ windowMs: 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false, validate: { xForwardedForHeader: false } }));
 
-// Stricter rate limit for auth endpoints: 10 req/min
-const authLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, validate: { xForwardedForHeader: false } });
+// Stricter rate limit for auth endpoints: 20 req/min
+const authLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false, validate: { xForwardedForHeader: false } });
 app.use("/api/trpc/auth.login", authLimiter);
 app.use("/api/trpc/auth.register", authLimiter);
 app.use("/api/trpc/auth.forgotPassword", authLimiter);

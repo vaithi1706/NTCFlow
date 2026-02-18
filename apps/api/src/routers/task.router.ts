@@ -6,6 +6,7 @@ import { notifyTaskAssigned } from "../services/emailNotifier.js";
 import { requirePermission, checkPermission, getWorkspaceIdFromProject, requireProjectAccess } from "../middleware/permissions.js";
 import { logAudit } from "../utils/audit.js";
 import { notifyIntegrations } from "../services/integrations.js";
+import { fireWebhooks } from "../services/webhooks.js";
 import { checkLimit } from "../middleware/subscription.js";
 
 const taskTypeEnum = z.enum(["bug", "feature", "story", "task", "epic"]);
@@ -25,7 +26,7 @@ export const taskRouter = router({
       sortBy: z.enum(["createdAt", "updatedAt", "priority", "dueDate", "position", "taskNumber"]).default("position"),
       excludeSubtasks: z.boolean().default(true),
       sortDir: z.enum(["asc", "desc"]).default("asc"),
-      limit: z.number().int().min(1).max(100).default(50),
+      limit: z.number().int().min(1).max(500).default(50),
       cursor: z.string().uuid().optional(),
     }))
     .query(async ({ ctx, input }) => {
@@ -180,13 +181,23 @@ export const taskRouter = router({
         data: { taskId: task.id, userId: ctx.user.userId },
       }).catch(() => {}); // ignore if already exists
 
-      // Notify integrations
+      // Notify integrations + webhooks
       notifyIntegrations(ctx.prisma, wsId, "task.created", {
         title: `Task created: ${task.title}`,
         fields: [
           { label: "Priority", value: input.priority },
           { label: "Type", value: input.type },
         ],
+      }).catch(() => {});
+
+      fireWebhooks(ctx.prisma, wsId, "task.created", {
+        taskId: task.id,
+        taskNumber: task.taskNumber,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        type: task.type,
+        projectId: task.projectId,
       }).catch(() => {});
 
       return task;
@@ -243,12 +254,28 @@ export const taskRouter = router({
 
       const task = await ctx.prisma.task.update({ where: { id }, data: updateData });
 
-      // Notify integrations on complete
+      // Notify integrations + webhooks on update/complete
+      const wsIdForNotify = await getWorkspaceIdFromProject(ctx.prisma, task.projectId);
+
+      fireWebhooks(ctx.prisma, wsIdForNotify, "task.updated", {
+        taskId: task.id,
+        taskNumber: task.taskNumber,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        changes: Object.keys(updateData),
+      }).catch(() => {});
+
       if (data.status === "done") {
-        const wsIdForNotify = await getWorkspaceIdFromProject(ctx.prisma, task.projectId);
         notifyIntegrations(ctx.prisma, wsIdForNotify, "task.completed", {
           title: `Task completed: ${task.title}`,
           fields: [{ label: "Status", value: "Done" }],
+        }).catch(() => {});
+
+        fireWebhooks(ctx.prisma, wsIdForNotify, "task.completed", {
+          taskId: task.id,
+          taskNumber: task.taskNumber,
+          title: task.title,
         }).catch(() => {});
       }
 

@@ -18,8 +18,8 @@ import {
 import { format } from "date-fns";
 
 const STATUS_COLORS: Record<string, string> = {
-  backlog: "bg-slate-500/10 text-slate-400 border-slate-500/20",
-  todo: "bg-slate-500/10 text-slate-300 border-slate-500/20",
+  backlog: "bg-slate-500/10 text-muted-foreground border-slate-500/20",
+  todo: "bg-slate-500/10 text-muted-foreground border-slate-500/20",
   in_progress: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   in_review: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   done: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",

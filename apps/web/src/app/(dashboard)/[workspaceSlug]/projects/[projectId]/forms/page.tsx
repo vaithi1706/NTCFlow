@@ -90,7 +90,7 @@ export default function FormsPage() {
       <>
         <TopBar title="Forms" />
         <div className="p-6 space-y-4">
-          {[1,2].map(i => <Skeleton key={i} className="h-24 bg-slate-800" />)}
+          {[1,2].map(i => <Skeleton key={i} className="h-24 bg-muted" />)}
         </div>
       </>
     );
@@ -102,8 +102,8 @@ export default function FormsPage() {
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">Public Forms</h2>
-            <p className="text-sm text-slate-400">Allow external users to submit tasks without logging in</p>
+            <h2 className="text-lg font-semibold text-foreground">Public Forms</h2>
+            <p className="text-sm text-muted-foreground">Allow external users to submit tasks without logging in</p>
           </div>
           <Button onClick={() => { resetForm(); setCreateOpen(true); }} className="bg-blue-500 hover:bg-blue-600">
             <Plus className="h-4 w-4 mr-2" /> Create Form
@@ -111,8 +111,8 @@ export default function FormsPage() {
         </div>
 
         {forms && forms.length === 0 && (
-          <Card className="bg-slate-900 border-slate-800">
-            <CardContent className="p-8 text-center text-slate-500">
+          <Card className="bg-muted border-border">
+            <CardContent className="p-8 text-center text-muted-foreground">
               <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
               <p>No forms yet. Create one to allow external submissions.</p>
             </CardContent>
@@ -121,27 +121,27 @@ export default function FormsPage() {
 
         <div className="space-y-4">
           {forms?.map((form) => (
-            <Card key={form.id} className="bg-slate-900 border-slate-800">
+            <Card key={form.id} className="bg-muted border-border">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-white font-medium">{form.title}</h3>
+                    <h3 className="text-foreground font-medium">{form.title}</h3>
                     <Badge variant={form.isActive ? "default" : "secondary"} className={form.isActive ? "bg-emerald-500/10 text-emerald-400" : ""}>
                       {form.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
-                  {form.description && <p className="text-sm text-slate-400 mt-1">{form.description}</p>}
+                  {form.description && <p className="text-sm text-muted-foreground mt-1">{form.description}</p>}
                   <div className="flex items-center gap-2 mt-2">
-                    <code className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded">
+                    <code className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
                       {baseUrl}/forms/{form.slug}
                     </code>
                     <button
                       onClick={() => { navigator.clipboard.writeText(`${baseUrl}/forms/${form.slug}`); toast.success("URL copied"); }}
-                      className="text-slate-400 hover:text-white"
+                      className="text-muted-foreground hover:text-foreground"
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </button>
-                    <a href={`/forms/${form.slug}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white">
+                    <a href={`/forms/${form.slug}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   </div>
@@ -152,7 +152,7 @@ export default function FormsPage() {
                     onCheckedChange={(checked) => toggleMutation.mutate({ id: form.id, isActive: checked })}
                   />
                   <Button variant="ghost" size="icon" onClick={() => openEdit(form)}>
-                    <Pencil className="h-4 w-4 text-slate-400" />
+                    <Pencil className="h-4 w-4 text-muted-foreground" />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => setDeleteId(form.id)}>
                     <Trash2 className="h-4 w-4 text-red-400" />
@@ -165,26 +165,26 @@ export default function FormsPage() {
 
         {/* Create / Edit Dialog */}
         <Dialog open={createOpen || !!editForm} onOpenChange={(open) => { if (!open) { setCreateOpen(false); setEditForm(null); } }}>
-          <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-lg">
+          <DialogContent className="max-h-[85vh] overflow-y-auto bg-muted border-border text-foreground max-w-lg">
             <DialogHeader>
               <DialogTitle>{editForm ? "Edit Form" : "Create Form"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
                 <Label>Title</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Bug Report Form" className="bg-slate-800 border-slate-700 text-white" />
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Bug Report Form" className="bg-muted border-border text-foreground" />
               </div>
               <div>
                 <Label>Description</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description shown on the form" className="bg-slate-800 border-slate-700 text-white" />
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description shown on the form" className="bg-muted border-border text-foreground" />
               </div>
               <div>
                 <Label>Default Task Type</Label>
                 <Select value={defaultType} onValueChange={setDefaultType}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  <SelectContent className="bg-muted border-border text-foreground">
                     <SelectItem value="bug">Bug</SelectItem>
                     <SelectItem value="feature">Feature</SelectItem>
                     <SelectItem value="task">Task</SelectItem>
@@ -202,10 +202,10 @@ export default function FormsPage() {
                         checked={allowedFields.includes(f.key)}
                         onChange={() => !f.required && toggleField(f.key)}
                         disabled={f.required}
-                        className="rounded border-slate-600"
+                        className="rounded border-border"
                       />
-                      <span className="text-slate-300">{f.label}</span>
-                      {f.required && <span className="text-xs text-slate-500">(required)</span>}
+                      <span className="text-muted-foreground">{f.label}</span>
+                      {f.required && <span className="text-xs text-muted-foreground">(required)</span>}
                     </label>
                   ))}
                 </div>

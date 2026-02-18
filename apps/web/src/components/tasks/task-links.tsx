@@ -182,7 +182,7 @@ function LinkDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
         <DialogHeader><DialogTitle>Link Task</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">

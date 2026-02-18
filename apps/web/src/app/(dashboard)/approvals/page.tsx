@@ -97,7 +97,7 @@ export default function ApprovalsPage() {
             {approvals.map((approval: any) => {
               const badge = statusBadge[approval.status] || statusBadge.pending;
               return (
-                <Card key={approval.id} className="border-border/50 bg-slate-900/50">
+                <Card key={approval.id} className="border-border/50 bg-muted/50">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <Avatar className="h-8 w-8 flex-shrink-0">
@@ -115,7 +115,7 @@ export default function ApprovalsPage() {
                           Requested by {approval.requestedBy?.name || "Unknown"} · {approval.task?.project?.name || ""} · {formatDistanceToNow(new Date(approval.createdAt), { addSuffix: true })}
                         </p>
                         {approval.comment && (
-                          <p className="text-xs text-muted-foreground mt-1 bg-slate-800/50 rounded p-2">
+                          <p className="text-xs text-muted-foreground mt-1 bg-muted/60 rounded p-2">
                             <MessageSquare className="h-3 w-3 inline mr-1" />{approval.comment}
                           </p>
                         )}

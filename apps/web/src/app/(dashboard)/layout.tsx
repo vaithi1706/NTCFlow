@@ -10,6 +10,7 @@ import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsDialog } from "@/components/shared/keyboard-shortcuts-dialog";
 import { OnboardingTour, HelpButton } from "@/components/shared/onboarding-tour";
 import { TrialBanner } from "@/components/shared/trial-banner";
+import { PwaInstallPrompt } from "@/components/shared/pwa-install-prompt";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -85,6 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <OnboardingTour />
       <HelpButton />
+      <PwaInstallPrompt />
     </div>
   );
 }

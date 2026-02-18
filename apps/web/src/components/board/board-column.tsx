@@ -215,7 +215,7 @@ export function BoardColumn({ column, tasks, project, onTaskClick, onTaskCreate,
 
       {/* Color dialog */}
       <Dialog open={colorDialogOpen} onOpenChange={setColorDialogOpen}>
-        <DialogContent className="sm:max-w-xs">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xs">
           <DialogHeader><DialogTitle>Change column color</DialogTitle></DialogHeader>
           <div className="flex flex-wrap gap-2 py-2">
             {presetColors.map((color) => (
@@ -235,7 +235,7 @@ export function BoardColumn({ column, tasks, project, onTaskClick, onTaskCreate,
 
       {/* WIP limit dialog */}
       <Dialog open={wipDialogOpen} onOpenChange={setWipDialogOpen}>
-        <DialogContent className="sm:max-w-xs">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xs">
           <DialogHeader><DialogTitle>Set WIP limit</DialogTitle></DialogHeader>
           <div className="space-y-2 py-2">
             <Label>Maximum tasks in this column (empty for no limit)</Label>

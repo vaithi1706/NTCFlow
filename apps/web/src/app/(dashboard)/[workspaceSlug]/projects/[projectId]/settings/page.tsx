@@ -380,7 +380,7 @@ export default function ProjectSettingsPage() {
 
         {/* Add Label Dialog */}
         <Dialog open={addLabelOpen} onOpenChange={setAddLabelOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
             <DialogHeader><DialogTitle>Create Label</DialogTitle></DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
@@ -427,7 +427,7 @@ export default function ProjectSettingsPage() {
 
         {/* Add Member Dialog — outside main flow so it doesn't break layout */}
         <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
             <DialogHeader><DialogTitle>Add Member to Project</DialogTitle></DialogHeader>
             <div className="py-2">
               <p className="text-xs text-muted-foreground mb-3">Select workspace members to add to this project</p>
@@ -519,7 +519,7 @@ function AutomationsCard({ projectId }: { projectId: string }) {
         </div>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
             <DialogHeader><DialogTitle>Create Automation</DialogTitle></DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
@@ -629,7 +629,7 @@ function CustomFieldsCard({ projectId }: { projectId: string }) {
         </div>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
             <DialogHeader><DialogTitle>Create Custom Field</DialogTitle></DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
@@ -809,7 +809,7 @@ function GitIntegrationCard({ projectId }: { projectId: string }) {
         )}
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
             <DialogHeader><DialogTitle>Connect Repository</DialogTitle></DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">

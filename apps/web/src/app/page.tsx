@@ -389,8 +389,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-6 text-sm text-white/30">
             <a href="#features" className="hover:text-white/60 transition-colors">Features</a>
             <a href="#pricing" className="hover:text-white/60 transition-colors">Pricing</a>
-            <span className="text-white/20 cursor-not-allowed">Login (Coming Soon)</span>
-            <span className="text-white/20 cursor-not-allowed">Register (Coming Soon)</span>
+            <a href="#waitlist" className="hover:text-white/60 transition-colors">Join Waitlist</a>
           </div>
           <div className="flex items-center gap-4 text-white/20">
             <Twitter className="h-4 w-4 hover:text-white/40 cursor-pointer transition-colors" />

@@ -29,7 +29,7 @@ export function UsageBar({ label, current, max, className }: UsageBarProps) {
           {current}/{max}
         </span>
       </div>
-      <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
       </div>
     </div>

@@ -139,7 +139,7 @@ export default function GoalsPage() {
         ) : (
           <div className="space-y-4">
             {goals.map((obj: any) => (
-              <Card key={obj.id} className="border-border/50 bg-slate-900/50">
+              <Card key={obj.id} className="border-border/50 bg-muted/50">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <button onClick={() => toggleExpand(obj.id)} className="mt-1 text-muted-foreground hover:text-foreground">
@@ -179,7 +179,7 @@ export default function GoalsPage() {
                         <p className="text-xs text-muted-foreground mb-2">{obj.description}</p>
                       )}
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all ${progressColor(obj.progress)}`}
                             style={{ width: `${obj.progress}%` }}
@@ -191,7 +191,7 @@ export default function GoalsPage() {
                       {expanded.has(obj.id) && (
                         <div className="mt-4 space-y-2 pl-2 border-l-2 border-indigo-500/30">
                           {obj.children?.map((kr: any) => (
-                            <div key={kr.id} className="bg-slate-800/50 rounded-lg p-3">
+                            <div key={kr.id} className="bg-muted/60 rounded-lg p-3">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-xs font-medium">{kr.title}</span>
                                 <Badge variant="outline" className="text-[10px] h-5">KR</Badge>
@@ -206,7 +206,7 @@ export default function GoalsPage() {
                                 </Button>
                               </div>
                               <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                <div className="flex-1 h-1.5 bg-accent rounded-full overflow-hidden">
                                   <div
                                     className={`h-full rounded-full ${progressColor(kr.progress)}`}
                                     style={{ width: `${kr.progress}%` }}

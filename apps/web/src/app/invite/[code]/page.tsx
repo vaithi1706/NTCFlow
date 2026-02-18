@@ -43,7 +43,7 @@ export default function InvitePage() {
   // Show loading while hydrating
   if (!hydrated) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Skeleton className="h-64 w-96 rounded-xl" />
       </div>
     );
@@ -53,8 +53,8 @@ export default function InvitePage() {
   if (user) {
     if (joined) {
       return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-          <Card className="bg-slate-900 border-slate-800 max-w-md w-full">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="bg-muted border-border max-w-md w-full">
             <CardHeader className="text-center">
               <div className="mx-auto w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle2 className="w-6 h-6 text-emerald-400" />
@@ -68,15 +68,15 @@ export default function InvitePage() {
     }
 
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <Card className="bg-slate-900 border-slate-800 max-w-md w-full">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="bg-muted border-border max-w-md w-full">
           <CardHeader className="text-center">
             <div className="mx-auto w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
               <Users className="w-6 h-6 text-blue-400" />
             </div>
             <CardTitle>Join Workspace</CardTitle>
             <CardDescription>
-              Hi <strong className="text-slate-200">{user.name}</strong>, you've been invited to join a workspace on DKFlow.
+              Hi <strong className="text-foreground">{user.name}</strong>, you've been invited to join a workspace on DKFlow.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -92,7 +92,7 @@ export default function InvitePage() {
               )}
               {joinMutation.isPending ? "Joining..." : "Accept & Join Workspace"}
             </Button>
-            <p className="text-xs text-slate-500 text-center">
+            <p className="text-xs text-muted-foreground text-center">
               Logged in as {user.email}. <button onClick={() => { useAuthStore.getState().logout(); router.push(`/login?invite=${code}`); }} className="text-blue-400 hover:underline">Switch account</button>
             </p>
           </CardContent>
@@ -103,8 +103,8 @@ export default function InvitePage() {
 
   // Not logged in — show register/login options
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <Card className="bg-slate-900 border-slate-800 max-w-md w-full">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="bg-muted border-border max-w-md w-full">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
             <Users className="w-6 h-6 text-blue-400" />

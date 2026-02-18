@@ -40,6 +40,9 @@ import { workloadRouter } from "./workload.router.js";
 import { slaRouter } from "./sla.router.js";
 import { sprintChartRouter } from "./sprintChart.router.js";
 import { waitlistRouter } from "./waitlist.router.js";
+import { reportRouter } from "./report.router.js";
+import { crossProjectRouter } from "./crossProject.router.js";
+import { resourcePlanningRouter } from "./resourcePlanning.router.js";
 
 export const appRouter = router({
   auth: authRouter,
@@ -83,6 +86,9 @@ export const appRouter = router({
   sprintChart: sprintChartRouter,
   sla: slaRouter,
   waitlist: waitlistRouter,
+  report: reportRouter,
+  crossProject: crossProjectRouter,
+  resourcePlanning: resourcePlanningRouter,
 });
 
 export type AppRouter = typeof appRouter;

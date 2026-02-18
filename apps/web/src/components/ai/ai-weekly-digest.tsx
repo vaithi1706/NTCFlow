@@ -62,19 +62,19 @@ export function AiWeeklyDigest({ workspaceId }: AiWeeklyDigestProps) {
                 <span className="text-sm text-muted-foreground">{mutation.data.subject}</span>
               </div>
 
-              <div className="border border-border rounded-lg p-4 bg-slate-900 overflow-y-auto flex-1 min-h-0 prose prose-invert prose-sm max-w-none
+              <div className="border border-border rounded-lg p-4 bg-muted overflow-y-auto flex-1 min-h-0 prose prose-invert prose-sm max-w-none
                 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-violet-400 [&_h1]:mb-2
                 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-blue-400 [&_h2]:mb-2 [&_h2]:mt-4
                 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-purple-400 [&_h3]:mb-1
-                [&_p]:text-sm [&_p]:text-slate-300 [&_p]:mb-2 [&_p]:leading-relaxed
-                [&_ul]:text-sm [&_ul]:text-slate-300 [&_ul]:space-y-1 [&_ul]:mb-3
-                [&_li]:text-sm [&_li]:text-slate-300
-                [&_strong]:text-slate-100
+                [&_p]:text-sm [&_p]:text-muted-foreground [&_p]:mb-2 [&_p]:leading-relaxed
+                [&_ul]:text-sm [&_ul]:text-muted-foreground [&_ul]:space-y-1 [&_ul]:mb-3
+                [&_li]:text-sm [&_li]:text-muted-foreground
+                [&_strong]:text-foreground
                 [&_a]:text-violet-400 [&_a]:no-underline
-                [&_hr]:border-slate-700 [&_hr]:my-3
+                [&_hr]:border-border [&_hr]:my-3
                 [&_table]:w-full [&_table]:text-sm
-                [&_th]:text-left [&_th]:p-2 [&_th]:text-slate-400 [&_th]:border-b [&_th]:border-slate-700
-                [&_td]:p-2 [&_td]:text-slate-300 [&_td]:border-b [&_td]:border-slate-800
+                [&_th]:text-left [&_th]:p-2 [&_th]:text-muted-foreground [&_th]:border-b [&_th]:border-border
+                [&_td]:p-2 [&_td]:text-muted-foreground [&_td]:border-b [&_td]:border-border
               ">
                 <div dangerouslySetInnerHTML={{ __html: mutation.data.html }} />
               </div>

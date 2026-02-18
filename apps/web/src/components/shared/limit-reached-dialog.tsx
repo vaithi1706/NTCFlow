@@ -18,7 +18,7 @@ export function LimitReachedDialog({ open, onOpenChange, limitType, current, max
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-900 border-zinc-700 max-w-md">
+      <DialogContent className="max-h-[85vh] overflow-y-auto bg-muted border-border max-w-md">
         <DialogHeader>
           <div className="mx-auto w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-2">
             <AlertTriangle className="w-6 h-6 text-red-500" />
@@ -35,7 +35,7 @@ export function LimitReachedDialog({ open, onOpenChange, limitType, current, max
           <p>Upgrade to Pro for unlimited {limitType.toLowerCase()}.</p>
         </div>
         <DialogFooter className="flex gap-2 sm:justify-center">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="border-zinc-700">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="border-border">
             Cancel
           </Button>
           <Button

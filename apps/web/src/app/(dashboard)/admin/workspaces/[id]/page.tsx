@@ -30,8 +30,8 @@ export default function WorkspaceDetail() {
     },
   });
 
-  if (isLoading) return <div className="flex-1 flex items-center justify-center text-slate-500">Loading...</div>;
-  if (!ws) return <div className="flex-1 flex items-center justify-center text-slate-500">Not found</div>;
+  if (isLoading) return <div className="flex-1 flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!ws) return <div className="flex-1 flex items-center justify-center text-muted-foreground">Not found</div>;
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -39,23 +39,23 @@ export default function WorkspaceDetail() {
       <div className="flex-1 overflow-auto p-6 space-y-6">
         {/* Info */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="bg-slate-900 border-slate-800 p-4 lg:col-span-2">
-            <h2 className="text-lg font-bold text-white mb-2">{ws.name}</h2>
+          <Card className="bg-muted border-border p-4 lg:col-span-2">
+            <h2 className="text-lg font-bold text-foreground mb-2">{ws.name}</h2>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-slate-400">Slug:</span> <span className="text-slate-200">{ws.slug}</span></div>
-              <div><span className="text-slate-400">Owner:</span> <span className="text-slate-200">{ws.owner.name} ({ws.owner.email})</span></div>
-              <div><span className="text-slate-400">Created:</span> <span className="text-slate-200">{format(new Date(ws.createdAt), "MMM d, yyyy")}</span></div>
-              <div><span className="text-slate-400">Members:</span> <span className="text-slate-200">{ws.members.length}</span></div>
+              <div><span className="text-muted-foreground">Slug:</span> <span className="text-foreground">{ws.slug}</span></div>
+              <div><span className="text-muted-foreground">Owner:</span> <span className="text-foreground">{ws.owner.name} ({ws.owner.email})</span></div>
+              <div><span className="text-muted-foreground">Created:</span> <span className="text-foreground">{format(new Date(ws.createdAt), "MMM d, yyyy")}</span></div>
+              <div><span className="text-muted-foreground">Members:</span> <span className="text-foreground">{ws.members.length}</span></div>
             </div>
           </Card>
 
-          <Card className="bg-slate-900 border-slate-800 p-4">
-            <h3 className="text-sm font-medium text-slate-300 mb-2">Subscription</h3>
+          <Card className="bg-muted border-border p-4">
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">Subscription</h3>
             <div className="space-y-2">
-              <Badge variant={ws.subscription?.plan === "pro" ? "default" : "secondary"} className={ws.subscription?.plan === "pro" ? "bg-yellow-600 text-white" : ""}>
+              <Badge variant={ws.subscription?.plan === "pro" ? "default" : "secondary"} className={ws.subscription?.plan === "pro" ? "bg-yellow-600 text-foreground" : ""}>
                 {ws.subscription?.plan || "free"}
               </Badge>
-              <div className="text-xs text-slate-400">Status: {ws.subscription?.status || "active"}</div>
+              <div className="text-xs text-muted-foreground">Status: {ws.subscription?.status || "active"}</div>
               {ws.subscription?.plan === "pro" && (
                 <Button size="sm" variant="destructive" onClick={() => revoke.mutate({ workspaceId: ws.id })} disabled={revoke.isPending}>
                   Revoke Pro
@@ -66,11 +66,11 @@ export default function WorkspaceDetail() {
         </div>
 
         {/* Members */}
-        <Card className="bg-slate-900 border-slate-800 p-4">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Members ({ws.members.length})</h3>
+        <Card className="bg-muted border-border p-4">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Members ({ws.members.length})</h3>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-left">
+              <tr className="border-b border-border text-muted-foreground text-left">
                 <th className="pb-2 font-medium">User</th>
                 <th className="pb-2 font-medium">Email</th>
                 <th className="pb-2 font-medium">Role</th>
@@ -79,16 +79,16 @@ export default function WorkspaceDetail() {
             </thead>
             <tbody>
               {ws.members.map((m) => (
-                <tr key={m.id} className="border-b border-slate-800/50 text-slate-300">
+                <tr key={m.id} className="border-b border-border/50 text-muted-foreground">
                   <td className="py-2 flex items-center gap-2">
                     <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-slate-700">{m.user.name?.[0]}</AvatarFallback>
+                      <AvatarFallback className="text-xs bg-accent">{m.user.name?.[0]}</AvatarFallback>
                     </Avatar>
                     {m.user.name}
                   </td>
-                  <td className="py-2 text-slate-400">{m.user.email}</td>
+                  <td className="py-2 text-muted-foreground">{m.user.email}</td>
                   <td className="py-2"><Badge variant="outline" className="text-xs">{m.role}</Badge></td>
-                  <td className="py-2 text-slate-400">{format(new Date(m.joinedAt), "MMM d, yyyy")}</td>
+                  <td className="py-2 text-muted-foreground">{format(new Date(m.joinedAt), "MMM d, yyyy")}</td>
                 </tr>
               ))}
             </tbody>
@@ -96,11 +96,11 @@ export default function WorkspaceDetail() {
         </Card>
 
         {/* Projects */}
-        <Card className="bg-slate-900 border-slate-800 p-4">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Projects ({ws.projects.length})</h3>
+        <Card className="bg-muted border-border p-4">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Projects ({ws.projects.length})</h3>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-left">
+              <tr className="border-b border-border text-muted-foreground text-left">
                 <th className="pb-2 font-medium">Name</th>
                 <th className="pb-2 font-medium">Identifier</th>
                 <th className="pb-2 font-medium">Tasks</th>
@@ -109,36 +109,36 @@ export default function WorkspaceDetail() {
             </thead>
             <tbody>
               {ws.projects.map((p) => (
-                <tr key={p.id} className="border-b border-slate-800/50 text-slate-300">
-                  <td className="py-2 text-white">{p.name}</td>
-                  <td className="py-2 text-slate-400">{p.identifier}</td>
+                <tr key={p.id} className="border-b border-border/50 text-muted-foreground">
+                  <td className="py-2 text-foreground">{p.name}</td>
+                  <td className="py-2 text-muted-foreground">{p.identifier}</td>
                   <td className="py-2">{p._count.tasks}</td>
-                  <td className="py-2 text-slate-400">{format(new Date(p.createdAt), "MMM d, yyyy")}</td>
+                  <td className="py-2 text-muted-foreground">{format(new Date(p.createdAt), "MMM d, yyyy")}</td>
                 </tr>
               ))}
               {ws.projects.length === 0 && (
-                <tr><td colSpan={4} className="py-4 text-center text-slate-500">No projects</td></tr>
+                <tr><td colSpan={4} className="py-4 text-center text-muted-foreground">No projects</td></tr>
               )}
             </tbody>
           </table>
         </Card>
 
         {/* Activity */}
-        <Card className="bg-slate-900 border-slate-800 p-4">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Recent Activity</h3>
+        <Card className="bg-muted border-border p-4">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent Activity</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {ws.recentActivity.map((a: any) => (
-              <div key={a.id} className="flex items-center gap-2 text-sm text-slate-400">
+              <div key={a.id} className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Avatar className="h-5 w-5">
-                  <AvatarFallback className="text-[10px] bg-slate-700">{a.user?.name?.[0]}</AvatarFallback>
+                  <AvatarFallback className="text-[10px] bg-accent">{a.user?.name?.[0]}</AvatarFallback>
                 </Avatar>
-                <span className="text-slate-300">{a.user?.name}</span>
+                <span className="text-muted-foreground">{a.user?.name}</span>
                 <span>{a.action}</span>
                 <span className="ml-auto text-xs">{format(new Date(a.createdAt), "MMM d, HH:mm")}</span>
               </div>
             ))}
             {ws.recentActivity.length === 0 && (
-              <div className="text-sm text-slate-500">No recent activity</div>
+              <div className="text-sm text-muted-foreground">No recent activity</div>
             )}
           </div>
         </Card>

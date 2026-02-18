@@ -682,7 +682,7 @@ function WebhooksTab({ workspaceId }: { workspaceId: string }) {
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[85vh] overflow-y-auto max-w-lg">
           <DialogHeader><DialogTitle>Create Webhook</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -821,7 +821,7 @@ function ApiKeysTab({ workspaceId }: { workspaceId: string }) {
       </Card>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader><DialogTitle>{newKey ? "API Key Created" : "Create API Key"}</DialogTitle></DialogHeader>
           {newKey ? (
             <div className="space-y-4 py-2">
@@ -1114,19 +1114,19 @@ function TaskTemplatesTab({ workspaceId }: { workspaceId: string }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-white">Task Templates</h3>
-          <p className="text-sm text-slate-400">Create reusable task configurations</p>
+          <h3 className="text-lg font-semibold text-foreground">Task Templates</h3>
+          <p className="text-sm text-muted-foreground">Create reusable task configurations</p>
         </div>
         <Button onClick={() => { resetForm(); setCreateOpen(true); }} className="bg-blue-500 hover:bg-blue-600">
           <Plus className="h-4 w-4 mr-2" /> New Template
         </Button>
       </div>
 
-      {isLoading && [1,2].map((i) => <Skeleton key={i} className="h-20 bg-slate-800" />)}
+      {isLoading && [1,2].map((i) => <Skeleton key={i} className="h-20 bg-muted" />)}
 
       {templates && templates.length === 0 && (
-        <Card className="bg-slate-900 border-slate-800">
-          <CardContent className="p-8 text-center text-slate-500">
+        <Card className="bg-muted border-border">
+          <CardContent className="p-8 text-center text-muted-foreground">
             <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
             <p>No templates yet. Create one to speed up task creation.</p>
           </CardContent>
@@ -1135,11 +1135,11 @@ function TaskTemplatesTab({ workspaceId }: { workspaceId: string }) {
 
       <div className="space-y-3">
         {templates?.map((t) => (
-          <Card key={t.id} className="bg-slate-900 border-slate-800">
+          <Card key={t.id} className="bg-muted border-border">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <h4 className="text-white font-medium">{t.name}</h4>
-                {t.description && <p className="text-sm text-slate-400">{t.description}</p>}
+                <h4 className="text-foreground font-medium">{t.name}</h4>
+                {t.description && <p className="text-sm text-muted-foreground">{t.description}</p>}
                 <div className="flex items-center gap-2 mt-1">
                   {t.defaultType && <Badge variant="secondary" className="text-xs">{t.defaultType}</Badge>}
                   {t.defaultPriority && t.defaultPriority !== "none" && (
@@ -1153,7 +1153,7 @@ function TaskTemplatesTab({ workspaceId }: { workspaceId: string }) {
               </div>
               <div className="flex gap-2">
                 <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
-                  <Pencil className="h-4 w-4 text-slate-400" />
+                  <Pencil className="h-4 w-4 text-muted-foreground" />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => setDeleteId(t.id)}>
                   <Trash2 className="h-4 w-4 text-red-400" />
@@ -1166,33 +1166,33 @@ function TaskTemplatesTab({ workspaceId }: { workspaceId: string }) {
 
       {/* Create/Edit Dialog */}
       <Dialog open={createOpen || !!editTemplate} onOpenChange={(open) => { if (!open) { setCreateOpen(false); setEditTemplate(null); } }}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="bg-muted border-border text-foreground max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editTemplate ? "Edit Template" : "Create Template"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>Template Name *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bug Report" className="bg-slate-800 border-slate-700 text-white" />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bug Report" className="bg-muted border-border text-foreground" />
             </div>
             <div>
               <Label>Description</Label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" className="bg-slate-800 border-slate-700 text-white" />
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" className="bg-muted border-border text-foreground" />
             </div>
             <div>
               <Label>Default Title Pattern</Label>
-              <Input value={defaultTitle} onChange={(e) => setDefaultTitle(e.target.value)} placeholder="e.g. [BUG] " className="bg-slate-800 border-slate-700 text-white" />
+              <Input value={defaultTitle} onChange={(e) => setDefaultTitle(e.target.value)} placeholder="e.g. [BUG] " className="bg-muted border-border text-foreground" />
             </div>
             <div>
               <Label>Default Description</Label>
-              <Textarea value={defaultDescription} onChange={(e) => setDefaultDescription(e.target.value)} placeholder="Pre-filled description..." className="bg-slate-800 border-slate-700 text-white" rows={3} />
+              <Textarea value={defaultDescription} onChange={(e) => setDefaultDescription(e.target.value)} placeholder="Pre-filled description..." className="bg-muted border-border text-foreground" rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Priority</Label>
                 <Select value={defaultPriority} onValueChange={setDefaultPriority}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-muted border-border text-foreground">
                     <SelectItem value="none">None</SelectItem>
                     <SelectItem value="low">Low</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
@@ -1204,8 +1204,8 @@ function TaskTemplatesTab({ workspaceId }: { workspaceId: string }) {
               <div>
                 <Label>Type</Label>
                 <Select value={defaultType} onValueChange={setDefaultType}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-muted border-border text-foreground">
                     <SelectItem value="task">Task</SelectItem>
                     <SelectItem value="bug">Bug</SelectItem>
                     <SelectItem value="feature">Feature</SelectItem>
@@ -1217,16 +1217,16 @@ function TaskTemplatesTab({ workspaceId }: { workspaceId: string }) {
             </div>
             <div>
               <Label>Story Points</Label>
-              <Input type="number" value={defaultStoryPoints} onChange={(e) => setDefaultStoryPoints(e.target.value)} placeholder="Optional" className="bg-slate-800 border-slate-700 text-white" />
+              <Input type="number" value={defaultStoryPoints} onChange={(e) => setDefaultStoryPoints(e.target.value)} placeholder="Optional" className="bg-muted border-border text-foreground" />
             </div>
             <div>
               <Label>Checklist Items</Label>
               <div className="space-y-2 mt-1">
                 {checklistItems.map((item, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-sm text-slate-300 flex-1">{item}</span>
+                    <span className="text-sm text-muted-foreground flex-1">{item}</span>
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setChecklistItems(prev => prev.filter((_, idx) => idx !== i))}>
-                      <X className="h-3 w-3 text-slate-400" />
+                      <X className="h-3 w-3 text-muted-foreground" />
                     </Button>
                   </div>
                 ))}
@@ -1235,7 +1235,7 @@ function TaskTemplatesTab({ workspaceId }: { workspaceId: string }) {
                     value={newChecklistItem}
                     onChange={(e) => setNewChecklistItem(e.target.value)}
                     placeholder="Add checklist item"
-                    className="bg-slate-800 border-slate-700 text-white text-sm"
+                    className="bg-muted border-border text-foreground text-sm"
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addChecklistItem())}
                   />
                   <Button variant="ghost" size="sm" onClick={addChecklistItem}>
@@ -1332,7 +1332,7 @@ function BillingTab({ workspaceId }: { workspaceId: string }) {
             {!isPro && (
               <Button
                 onClick={() => router.push("/pricing")}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-foreground"
               >
                 <Zap className="h-4 w-4 mr-2" />
                 Upgrade to Pro

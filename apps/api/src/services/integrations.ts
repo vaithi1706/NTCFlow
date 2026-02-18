@@ -2,27 +2,47 @@ import { PrismaClient } from "@prisma/client";
 
 type IntegrationEvent =
   | "task.created"
+  | "task.updated"
   | "task.completed"
   | "task.assigned"
+  | "task.deleted"
+  | "task.status_changed"
+  | "task.priority_changed"
   | "comment.created"
   | "sprint.started"
-  | "sprint.completed";
+  | "sprint.completed"
+  | "project.created"
+  | "project.updated"
+  | "member.added"
+  | "member.removed";
 
 interface NotifyPayload {
   title: string;
   description?: string;
   url?: string;
   fields?: { label: string; value: string }[];
+  rawData?: Record<string, any>;
 }
 
+const EVENT_EMOJI: Record<string, string> = {
+  "task.created": "🆕",
+  "task.updated": "📝",
+  "task.completed": "✅",
+  "task.assigned": "👤",
+  "task.deleted": "🗑️",
+  "task.status_changed": "🔄",
+  "task.priority_changed": "🎯",
+  "comment.created": "💬",
+  "sprint.started": "🏃",
+  "sprint.completed": "🏁",
+  "project.created": "📂",
+  "project.updated": "📂",
+  "member.added": "➕",
+  "member.removed": "➖",
+};
+
 function buildSlackMessage(event: IntegrationEvent, payload: NotifyPayload) {
-  const emoji =
-    event.startsWith("task.created") ? "🆕" :
-    event.startsWith("task.completed") ? "✅" :
-    event.startsWith("task.assigned") ? "👤" :
-    event.startsWith("comment") ? "💬" :
-    event.startsWith("sprint.started") ? "🏃" :
-    event.startsWith("sprint.completed") ? "🏁" : "📋";
+  const emoji = EVENT_EMOJI[event] || "📋";
 
   const blocks: any[] = [
     {
@@ -61,13 +81,7 @@ function buildSlackMessage(event: IntegrationEvent, payload: NotifyPayload) {
 }
 
 function buildTeamsMessage(event: IntegrationEvent, payload: NotifyPayload) {
-  const emoji =
-    event.startsWith("task.created") ? "🆕" :
-    event.startsWith("task.completed") ? "✅" :
-    event.startsWith("task.assigned") ? "👤" :
-    event.startsWith("comment") ? "💬" :
-    event.startsWith("sprint.started") ? "🏃" :
-    event.startsWith("sprint.completed") ? "🏁" : "📋";
+  const emoji = EVENT_EMOJI[event] || "📋";
 
   const body: any[] = [
     { type: "TextBlock", text: `${emoji} ${payload.title}`, weight: "Bolder", size: "Medium" },
@@ -106,43 +120,93 @@ function buildTeamsMessage(event: IntegrationEvent, payload: NotifyPayload) {
   };
 }
 
+function buildZapierPayload(event: IntegrationEvent, payload: NotifyPayload) {
+  // Zapier expects flat JSON with descriptive keys
+  return {
+    event,
+    title: payload.title,
+    description: payload.description || "",
+    url: payload.url || "",
+    timestamp: new Date().toISOString(),
+    source: "DKFlow",
+    ...(payload.fields?.reduce((acc, f) => ({ ...acc, [f.label.toLowerCase().replace(/\s+/g, "_")]: f.value }), {}) || {}),
+    ...(payload.rawData || {}),
+  };
+}
+
+function buildGenericWebhookPayload(event: IntegrationEvent, payload: NotifyPayload) {
+  return {
+    event,
+    timestamp: new Date().toISOString(),
+    data: {
+      title: payload.title,
+      description: payload.description,
+      url: payload.url,
+      fields: payload.fields,
+      ...payload.rawData,
+    },
+  };
+}
+
+function buildPayloadForType(type: string, event: IntegrationEvent, payload: NotifyPayload) {
+  switch (type) {
+    case "slack":
+      return buildSlackMessage(event, payload);
+    case "teams":
+      return buildTeamsMessage(event, payload);
+    case "zapier":
+      return buildZapierPayload(event, payload);
+    case "github":
+    case "google_calendar":
+    case "generic_webhook":
+    default:
+      return buildGenericWebhookPayload(event, payload);
+  }
+}
+
 export async function notifyIntegrations(
   prisma: PrismaClient,
   workspaceId: string,
   event: IntegrationEvent,
-  payload: NotifyPayload,
+  payload: NotifyPayload
 ) {
   const integrations = await prisma.integration.findMany({
     where: { workspaceId, isActive: true, events: { has: event } },
   });
 
   const promises = integrations.map(async (intg) => {
-    const body =
-      intg.type === "slack"
-        ? buildSlackMessage(event, payload)
-        : buildTeamsMessage(event, payload);
+    try {
+      const body = buildPayloadForType(intg.type, event, payload);
 
-    await fetch(intg.webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+      const res = await fetch(intg.webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        console.error(`Integration ${intg.name} (${intg.type}) failed: ${res.status}`);
+      }
+    } catch (err) {
+      console.error(`Integration ${intg.name} (${intg.type}) error:`, err);
+    }
   });
 
   await Promise.allSettled(promises);
 }
 
-export async function sendTestMessage(webhookUrl: string, type: "slack" | "teams") {
+export async function sendTestMessage(webhookUrl: string, type: string) {
+  const event = "task.created" as IntegrationEvent;
   const payload: NotifyPayload = {
     title: "Test notification from DKFlow",
     description: "If you see this message, your integration is working correctly! 🎉",
-    fields: [{ label: "Status", value: "Connected" }],
+    fields: [
+      { label: "Status", value: "Connected" },
+      { label: "Type", value: type },
+    ],
   };
 
-  const body =
-    type === "slack"
-      ? buildSlackMessage("task.created", payload)
-      : buildTeamsMessage("task.created", payload);
+  const body = buildPayloadForType(type, event, payload);
 
   const res = await fetch(webhookUrl, {
     method: "POST",

@@ -41,7 +41,7 @@ export function UpgradeGate({ feature, children, className }: UpgradeGateProps) 
         {children}
       </div>
       <div className="absolute inset-0 flex items-center justify-center z-10">
-        <div className="bg-zinc-900/95 border border-zinc-700 rounded-xl p-6 max-w-sm text-center shadow-2xl">
+        <div className="bg-muted/95 border border-zinc-700 rounded-xl p-6 max-w-sm text-center shadow-2xl">
           <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
             <Lock className="w-6 h-6 text-amber-500" />
           </div>

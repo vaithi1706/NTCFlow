@@ -280,7 +280,7 @@ export default function DependenciesPage() {
             <p className="text-sm">Add dependencies between tasks to see the graph</p>
           </div>
         ) : (
-          <div className="bg-slate-900/50 border border-border/50 rounded-lg overflow-auto">
+          <div className="bg-muted/50 border border-border/50 rounded-lg overflow-auto">
             <svg ref={svgRef} width={svgWidth} height={svgHeight}>
               <defs>
                 <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">

@@ -317,7 +317,7 @@ export default function PricingPage() {
 
       {/* License Key Dialog */}
       <Dialog open={keyDialogOpen} onOpenChange={setKeyDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Key className="w-5 h-5 text-indigo-400" />

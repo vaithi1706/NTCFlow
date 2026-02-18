@@ -52,7 +52,7 @@ export default function PublicFormPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
@@ -60,12 +60,12 @@ export default function PublicFormPage() {
 
   if (error || !form) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Card className="bg-slate-900 border-slate-800 max-w-md w-full mx-4">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="bg-muted border-border max-w-md w-full mx-4">
           <CardContent className="p-8 text-center">
             <AlertCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
-            <p className="text-white font-medium">Form not found</p>
-            <p className="text-sm text-slate-400 mt-1">This form may have been deactivated or removed.</p>
+            <p className="text-foreground font-medium">Form not found</p>
+            <p className="text-sm text-muted-foreground mt-1">This form may have been deactivated or removed.</p>
           </CardContent>
         </Card>
       </div>
@@ -74,14 +74,14 @@ export default function PublicFormPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Card className="bg-slate-900 border-slate-800 max-w-md w-full mx-4">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="bg-muted border-border max-w-md w-full mx-4">
           <CardContent className="p-8 text-center">
             <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white">Submitted!</h2>
-            <p className="text-slate-400 mt-2">
+            <h2 className="text-xl font-semibold text-foreground">Submitted!</h2>
+            <p className="text-muted-foreground mt-2">
               Your submission has been received
-              {taskInfo && <span> as <strong className="text-white">{taskInfo.taskPrefix}-{taskInfo.taskNumber}</strong></span>}.
+              {taskInfo && <span> as <strong className="text-foreground">{taskInfo.taskPrefix}-{taskInfo.taskNumber}</strong></span>}.
             </p>
             <Button
               className="mt-6 bg-blue-500 hover:bg-blue-600"
@@ -96,52 +96,52 @@ export default function PublicFormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <Card className="bg-slate-900 border-slate-800 max-w-lg w-full">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="bg-muted border-border max-w-lg w-full">
         <CardHeader>
           <div className="flex items-center gap-2 mb-2">
             {form.project.color && (
               <div className="w-3 h-3 rounded" style={{ backgroundColor: form.project.color }} />
             )}
-            <span className="text-sm text-slate-400">{form.project.name}</span>
+            <span className="text-sm text-muted-foreground">{form.project.name}</span>
           </div>
-          <CardTitle className="text-white text-xl">{form.title}</CardTitle>
-          {form.description && <CardDescription className="text-slate-400">{form.description}</CardDescription>}
+          <CardTitle className="text-foreground text-xl">{form.title}</CardTitle>
+          {form.description && <CardDescription className="text-muted-foreground">{form.description}</CardDescription>}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label className="text-slate-300">Title <span className="text-red-400">*</span></Label>
+              <Label className="text-muted-foreground">Title <span className="text-red-400">*</span></Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 placeholder="Brief summary"
-                className="bg-slate-800 border-slate-700 text-white"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
             {allowed.includes("description") && (
               <div>
-                <Label className="text-slate-300">Description</Label>
+                <Label className="text-muted-foreground">Description</Label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Detailed description..."
                   rows={4}
-                  className="bg-slate-800 border-slate-700 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             )}
 
             {allowed.includes("priority") && (
               <div>
-                <Label className="text-slate-300">Priority</Label>
+                <Label className="text-muted-foreground">Priority</Label>
                 <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  <SelectContent className="bg-muted border-border text-foreground">
                     <SelectItem value="none">None</SelectItem>
                     <SelectItem value="low">Low</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
@@ -154,12 +154,12 @@ export default function PublicFormPage() {
 
             {allowed.includes("type") && (
               <div>
-                <Label className="text-slate-300">Type</Label>
+                <Label className="text-muted-foreground">Type</Label>
                 <Select value={type || form.defaultType} onValueChange={setType}>
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                  <SelectContent className="bg-muted border-border text-foreground">
                     <SelectItem value="bug">Bug</SelectItem>
                     <SelectItem value="feature">Feature Request</SelectItem>
                     <SelectItem value="task">Task</SelectItem>
@@ -171,13 +171,13 @@ export default function PublicFormPage() {
 
             {allowed.includes("email") && (
               <div>
-                <Label className="text-slate-300">Your Email</Label>
+                <Label className="text-muted-foreground">Your Email</Label>
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="for follow-up (optional)"
-                  className="bg-slate-800 border-slate-700 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             )}

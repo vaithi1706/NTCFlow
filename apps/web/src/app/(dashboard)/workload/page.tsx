@@ -94,30 +94,30 @@ export default function WorkloadPage() {
         {/* Summary Cards */}
         {data?.summary && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <Card className="bg-slate-900/50 border-border/50">
+            <Card className="bg-muted/50 border-border/50">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">Team Capacity</p>
                 <p className="text-2xl font-bold">{data.summary.totalCapacity}h</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900/50 border-border/50">
+            <Card className="bg-muted/50 border-border/50">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">Utilization</p>
                 <p className="text-2xl font-bold">{data.summary.utilizationPercent}%</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900/50 border-border/50">
+            <Card className="bg-muted/50 border-border/50">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3 text-red-400" /> Overloaded
+                  <AlertTriangle className="h-3 w-3 text-red-500" /> Overloaded
                 </p>
-                <p className="text-2xl font-bold text-red-400">{data.summary.overloaded}</p>
+                <p className="text-2xl font-bold text-red-500">{data.summary.overloaded}</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-900/50 border-border/50">
+            <Card className="bg-muted/50 border-border/50">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">Underloaded</p>
-                <p className="text-2xl font-bold text-green-400">{data.summary.underloaded}</p>
+                <p className="text-2xl font-bold text-green-500">{data.summary.underloaded}</p>
               </CardContent>
             </Card>
           </div>
@@ -138,7 +138,7 @@ export default function WorkloadPage() {
               const overloaded = member.utilization > 100;
               const maxBarPct = Math.min(member.utilization, 150);
               return (
-                <div key={member.userId} className="bg-slate-900/50 border border-border/50 rounded-lg p-4">
+                <div key={member.userId} className="bg-muted/50 border border-border/50 rounded-lg p-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       {member.user.avatarUrl && <AvatarImage src={member.user.avatarUrl} />}
@@ -153,7 +153,7 @@ export default function WorkloadPage() {
                       </p>
                     </div>
                     <div className="flex-1">
-                      <div className="h-6 bg-slate-800 rounded-full overflow-hidden relative">
+                      <div className="h-6 bg-muted rounded-full overflow-hidden relative">
                         {member.byProject.map((proj: any, pi: number) => {
                           const pctWidth = member.capacityHoursPerWeek > 0
                             ? (proj.hours / member.capacityHoursPerWeek) * 100
@@ -186,10 +186,10 @@ export default function WorkloadPage() {
                       </div>
                     </div>
                     <div className="w-20 text-right flex-shrink-0">
-                      <span className={`text-sm font-bold tabular-nums ${overloaded ? "text-red-400" : "text-green-400"}`}>
+                      <span className={`text-sm font-bold tabular-nums ${overloaded ? "text-red-500" : "text-green-600 dark:text-green-400"}`}>
                         {member.totalEstimateHours}/{member.capacityHoursPerWeek}h
                       </span>
-                      <p className={`text-[10px] ${overloaded ? "text-red-400" : "text-muted-foreground"}`}>
+                      <p className={`text-[10px] ${overloaded ? "text-red-500" : "text-muted-foreground"}`}>
                         {member.utilization}%
                       </p>
                     </div>
@@ -197,7 +197,7 @@ export default function WorkloadPage() {
                       <span>Due: {member.dueThisWeek}</span>
                       <span>Next: {member.dueNextWeek}</span>
                       {member.overdue > 0 && (
-                        <span className="text-red-400">⚠ {member.overdue}</span>
+                        <span className="text-red-500">⚠ {member.overdue}</span>
                       )}
                     </div>
                   </div>

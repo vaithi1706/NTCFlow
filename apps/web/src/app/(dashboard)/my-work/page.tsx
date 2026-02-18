@@ -125,8 +125,8 @@ function ProjectTasks({ project, userId, router, wsSlug }: { project: any; userI
     <div>
       <div className="flex items-center gap-2 mb-3">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: project.color || "#3b82f6" }} />
-        <h2 className="font-medium text-sm text-slate-300">{project.name}</h2>
-        <span className="text-xs text-slate-500">({tasks.length} tasks)</span>
+        <h2 className="font-medium text-sm text-muted-foreground">{project.name}</h2>
+        <span className="text-xs text-muted-foreground">({tasks.length} tasks)</span>
       </div>
 
       {overdue.length > 0 && (
@@ -139,7 +139,7 @@ function ProjectTasks({ project, userId, router, wsSlug }: { project: any; userI
         <TaskGroup title="Upcoming" icon={<Circle className="w-4 h-4 text-blue-400" />} tasks={upcoming} project={project} router={router} wsSlug={wsSlug} />
       )}
       {noDue.length > 0 && (
-        <TaskGroup title="No due date" icon={<Circle className="w-4 h-4 text-slate-500" />} tasks={noDue} project={project} router={router} wsSlug={wsSlug} />
+        <TaskGroup title="No due date" icon={<Circle className="w-4 h-4 text-muted-foreground" />} tasks={noDue} project={project} router={router} wsSlug={wsSlug} />
       )}
       {completed.length > 0 && (
         <TaskGroup title="Completed" icon={<CheckCircle2 className="w-4 h-4 text-emerald-400" />} tasks={completed} project={project} router={router} wsSlug={wsSlug} />
@@ -153,20 +153,20 @@ function TaskGroup({ title, icon, tasks, project, router, wsSlug }: { title: str
     <div className="mb-4">
       <div className="flex items-center gap-2 mb-2 pl-4">
         {icon}
-        <span className="text-xs font-medium text-slate-400 uppercase">{title} ({tasks.length})</span>
+        <span className="text-xs font-medium text-muted-foreground uppercase">{title} ({tasks.length})</span>
       </div>
       <div className="space-y-1">
         {tasks.map((task: any) => (
           <div
             key={task.id}
             onClick={() => router.push(`/${wsSlug}/projects/${project.id}/board`)}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-slate-800/50 cursor-pointer transition-colors group"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-muted/60 cursor-pointer transition-colors group"
           >
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="text-xs text-slate-500 font-mono shrink-0">
+              <span className="text-xs text-muted-foreground font-mono shrink-0">
                 {task.taskNumber ? `DK-${task.taskNumber}` : ""}
               </span>
-              <span className="text-sm text-slate-200 truncate">{task.title}</span>
+              <span className="text-sm text-foreground truncate">{task.title}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {task.priority && task.priority !== "None" && (

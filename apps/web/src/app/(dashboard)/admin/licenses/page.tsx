@@ -60,14 +60,14 @@ export default function AdminLicenses() {
       <TopBar breadcrumbs={[{ label: "Admin", href: "/admin" }, { label: "License Keys" }]} />
       <div className="flex-1 overflow-auto p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">License Keys</h1>
+          <h1 className="text-2xl font-bold text-foreground">License Keys</h1>
           <Button size="sm" onClick={() => setGenOpen(true)}>
             <Plus className="h-4 w-4 mr-1" /> Generate Key
           </Button>
         </div>
 
         <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-          <TabsList className="bg-slate-800">
+          <TabsList className="bg-muted">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="used">Used</TabsTrigger>
@@ -75,11 +75,11 @@ export default function AdminLicenses() {
           </TabsList>
         </Tabs>
 
-        <Card className="bg-slate-900 border-slate-800">
+        <Card className="bg-muted border-border">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 text-left">
+                <tr className="border-b border-border text-muted-foreground text-left">
                   <th className="p-3 font-medium">Key</th>
                   <th className="p-3 font-medium">Plan</th>
                   <th className="p-3 font-medium">Duration</th>
@@ -95,23 +95,23 @@ export default function AdminLicenses() {
                 {keys?.map((k) => {
                   const status = getStatus(k);
                   return (
-                    <tr key={k.id} className="border-b border-slate-800/50 text-slate-300">
+                    <tr key={k.id} className="border-b border-border/50 text-muted-foreground">
                       <td className="p-3">
                         <div className="flex items-center gap-1">
-                          <code className="text-xs bg-slate-800 px-1.5 py-0.5 rounded font-mono">{k.key}</code>
+                          <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{k.key}</code>
                           <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => { navigator.clipboard.writeText(k.key); toast.success("Copied"); }}>
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
-                        {k.note && <div className="text-xs text-slate-500 mt-0.5">{k.note}</div>}
+                        {k.note && <div className="text-xs text-muted-foreground mt-0.5">{k.note}</div>}
                       </td>
                       <td className="p-3"><Badge variant="outline" className="text-xs">{k.plan}</Badge></td>
                       <td className="p-3">{k.durationDays}d</td>
                       <td className="p-3">{k.usedCount}/{k.maxUses}</td>
-                      <td className="p-3 text-slate-400">{k.usedByUser?.email || "—"}</td>
-                      <td className="p-3 text-slate-400">{k.workspace?.name || "—"}</td>
-                      <td className="p-3"><Badge className={`${status.color} text-white text-xs`}>{status.label}</Badge></td>
-                      <td className="p-3 text-slate-400">{format(new Date(k.createdAt), "MMM d, yyyy")}</td>
+                      <td className="p-3 text-muted-foreground">{k.usedByUser?.email || "—"}</td>
+                      <td className="p-3 text-muted-foreground">{k.workspace?.name || "—"}</td>
+                      <td className="p-3"><Badge className={`${status.color} text-foreground text-xs`}>{status.label}</Badge></td>
+                      <td className="p-3 text-muted-foreground">{format(new Date(k.createdAt), "MMM d, yyyy")}</td>
                       <td className="p-3">
                         {k.isActive && (
                           <Button size="sm" variant="destructive" onClick={() => revokeKey.mutate({ id: k.id })} disabled={revokeKey.isPending}>
@@ -123,10 +123,10 @@ export default function AdminLicenses() {
                   );
                 })}
                 {isLoading && (
-                  <tr><td colSpan={9} className="p-4 text-center text-slate-500">Loading...</td></tr>
+                  <tr><td colSpan={9} className="p-4 text-center text-muted-foreground">Loading...</td></tr>
                 )}
                 {keys?.length === 0 && (
-                  <tr><td colSpan={9} className="p-4 text-center text-slate-500">No license keys found</td></tr>
+                  <tr><td colSpan={9} className="p-4 text-center text-muted-foreground">No license keys found</td></tr>
                 )}
               </tbody>
             </table>
@@ -135,22 +135,22 @@ export default function AdminLicenses() {
       </div>
 
       <Dialog open={genOpen} onOpenChange={setGenOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800">
+        <DialogContent className="max-h-[85vh] overflow-y-auto bg-muted border-border">
           <DialogHeader>
-            <DialogTitle className="text-white">Generate License Key</DialogTitle>
+            <DialogTitle className="text-foreground">Generate License Key</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300">Duration (days)</Label>
-              <Input type="number" value={durationDays} onChange={(e) => setDurationDays(Number(e.target.value))} className="bg-slate-800 border-slate-700 text-white" />
+              <Label className="text-muted-foreground">Duration (days)</Label>
+              <Input type="number" value={durationDays} onChange={(e) => setDurationDays(Number(e.target.value))} className="bg-muted border-border text-foreground" />
             </div>
             <div>
-              <Label className="text-slate-300">Max Uses</Label>
-              <Input type="number" value={maxUses} onChange={(e) => setMaxUses(Number(e.target.value))} className="bg-slate-800 border-slate-700 text-white" />
+              <Label className="text-muted-foreground">Max Uses</Label>
+              <Input type="number" value={maxUses} onChange={(e) => setMaxUses(Number(e.target.value))} className="bg-muted border-border text-foreground" />
             </div>
             <div>
-              <Label className="text-slate-300">Note (optional)</Label>
-              <Input value={note} onChange={(e) => setNote(e.target.value)} className="bg-slate-800 border-slate-700 text-white" placeholder="e.g. For customer X" />
+              <Label className="text-muted-foreground">Note (optional)</Label>
+              <Input value={note} onChange={(e) => setNote(e.target.value)} className="bg-muted border-border text-foreground" placeholder="e.g. For customer X" />
             </div>
           </div>
           <DialogFooter>
