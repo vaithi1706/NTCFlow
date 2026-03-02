@@ -13,8 +13,8 @@
     "db:seed": "pnpm --filter @dkflow/api prisma db seed"
   },
   "devDependencies": {
-    "turbo": "^2.4.0",
-    "prettier": "^3.5.0"
+    "prettier": "^3.5.0",
+    "turbo": "^2.4.0"
   },
   "packageManager": "pnpm@10.29.3",
   "engines": {
@@ -29,5 +29,10 @@
       "prisma",
       "sharp"
     ]
+  },
+  "dependencies": {
+    "mammoth": "^1.11.0",
+    "pdf-parse": "^2.4.5",
+    "xlsx": "^0.18.5"
   }
 }

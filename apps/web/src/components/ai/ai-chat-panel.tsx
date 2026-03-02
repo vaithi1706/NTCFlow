@@ -37,10 +37,10 @@ const QUICK_ACTIONS = [
 ];
 
 const SUGGESTIONS = [
-  { emoji: "📋", label: "What's the project status?" },
-  { emoji: "➕", label: "Create a new task" },
-  { emoji: "👥", label: "Show team workload" },
-  { emoji: "⚠️", label: "What's at risk?" },
+  { icon: ClipboardList, label: "What's the project status?" },
+  { icon: Plus, label: "Create a new task" },
+  { icon: Users, label: "Show team workload" },
+  { icon: AlertTriangle, label: "What's at risk?" },
 ];
 
 function ActionIcon({ type }: { type: string }) {
@@ -153,18 +153,22 @@ export function AiChatPanel({ projectId, workspaceId }: { projectId?: string; wo
     {
       enabled: !!activeSessionId && open,
       refetchOnWindowFocus: false,
-      onSuccess: (data) => {
-        setSessionTitle(data.session.title);
-        setMessages(data.messages.map(m => ({
-          id: m.id,
-          role: m.role as "user" | "assistant",
-          content: m.content,
-          actions: m.actions as any,
-          createdAt: m.createdAt,
-        })));
-      },
     }
   );
+
+  // Sync history data to messages state when query succeeds
+  useEffect(() => {
+    if (historyQuery.data) {
+      setSessionTitle(historyQuery.data.session.title);
+      setMessages(historyQuery.data.messages.map((m: any) => ({
+        id: m.id,
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        actions: m.actions as any,
+        createdAt: m.createdAt,
+      })));
+    }
+  }, [historyQuery.data]);
 
   const chatMutation = trpc.ai.chat.useMutation({
     onSuccess: (data) => {
@@ -237,6 +241,7 @@ export function AiChatPanel({ projectId, workspaceId }: { projectId?: string; wo
   }, []);
 
   const handleSelectSession = useCallback((session: ChatSession) => {
+    setMessages([]);
     setActiveSessionId(session.id);
     setEditingTitle(false);
   }, []);
@@ -395,7 +400,7 @@ export function AiChatPanel({ projectId, workspaceId }: { projectId?: string; wo
                           onClick={() => handleSend(s.label)}
                           className="text-left text-xs px-3 py-3 rounded-xl border border-border hover:border-violet-500/30 hover:bg-violet-500/5 transition-all text-muted-foreground hover:text-foreground group"
                         >
-                          <span className="text-base mb-1 block">{s.emoji}</span>
+                          <s.icon className="h-5 w-5 mb-1 text-violet-400" />
                           <span className="group-hover:text-violet-300 transition-colors">{s.label}</span>
                         </button>
                       ))}
@@ -428,8 +433,8 @@ export function AiChatPanel({ projectId, workspaceId }: { projectId?: string; wo
                                   className={cn(
                                     "flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border",
                                     action.success
-                                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                                      : "bg-red-500/10 border-red-500/20 text-red-400"
+                                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+                                      : "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400"
                                   )}
                                 >
                                   <ActionIcon type={action.type} />
@@ -443,7 +448,7 @@ export function AiChatPanel({ projectId, workspaceId }: { projectId?: string; wo
                       </div>
                     ) : (
                       <div className="max-w-[85%]">
-                        <div className="bg-blue-600 text-foreground rounded-xl rounded-br-sm px-3.5 py-2.5 text-sm">
+                        <div className="bg-blue-600 text-white rounded-xl rounded-br-sm px-3.5 py-2.5 text-sm">
                           <p className="whitespace-pre-wrap">{msg.content}</p>
                         </div>
                       </div>

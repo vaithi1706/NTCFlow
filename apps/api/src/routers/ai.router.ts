@@ -23,6 +23,18 @@ import {
   generateStandupReport,
   calculateHealthScore,
   analyzeExcelForTasks,
+  parseNaturalLanguageTask,
+  aiSmartSearch,
+  predictDueDate,
+  generateAutoStandup,
+  rankNotifications,
+  analyzeWorkflow,
+  summarizeCommentThread,
+  findSimilarTasksLive,
+  enhanceText,
+  generateProjectHealthDashboard,
+  suggestTemplates,
+  extractFromTranscript,
 } from "../services/ai.js";
 import { requireProjectAccess, getWorkspaceIdFromProject } from "../middleware/permissions.js";
 import { requireFeature } from "../middleware/subscription.js";
@@ -39,11 +51,38 @@ export const aiRouter = router({
 
       const project = await ctx.prisma.project.findUnique({
         where: { id: input.projectId },
-        select: { name: true },
+        select: { name: true, description: true },
       });
 
+      // Fetch real context: recent tasks, labels, members
+      const [recentTasks, labels, members] = await Promise.all([
+        ctx.prisma.task.findMany({
+          where: { projectId: input.projectId, deletedAt: null },
+          select: { title: true, status: true, type: true, priority: true },
+          orderBy: { createdAt: "desc" },
+          take: 15,
+        }),
+        ctx.prisma.label.findMany({
+          where: { projectId: input.projectId },
+          select: { name: true },
+        }),
+        ctx.prisma.projectMember.findMany({
+          where: { projectId: input.projectId },
+          include: { user: { select: { name: true } } },
+          take: 10,
+        }),
+      ]);
+
+      const projectContext = {
+        name: project?.name,
+        description: project?.description,
+        existingTasks: recentTasks.map(t => `${t.title} [${t.status}, ${t.type}, ${t.priority}]`),
+        labels: labels.map(l => l.name),
+        teamMembers: members.map(m => m.user.name),
+      };
+
       try {
-        const result = await generateTaskDescription(input.title, project?.name || undefined);
+        const result = await generateTaskDescription(input.title, projectContext);
         await logAudit(ctx.prisma, {
           userId: ctx.user.userId,
           workspaceId: wsId,
@@ -70,13 +109,21 @@ export const aiRouter = router({
       await requireFeature(wsId, "ai");
       await requireProjectAccess(ctx.prisma, ctx.user.userId, input.projectId);
 
-      const project = await ctx.prisma.project.findUnique({
-        where: { id: input.projectId },
-        select: { name: true },
-      });
+      const [project, existingTasks] = await Promise.all([
+        ctx.prisma.project.findUnique({
+          where: { id: input.projectId },
+          select: { name: true },
+        }),
+        ctx.prisma.task.findMany({
+          where: { projectId: input.projectId, deletedAt: null },
+          select: { title: true },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        }),
+      ]);
 
       try {
-        const suggestions = await breakdownTask(input.title, input.description, project?.name || undefined);
+        const suggestions = await breakdownTask(input.title, input.description, project?.name || undefined, existingTasks.map(t => t.title));
 
         // Get next task number
         const lastTask = await ctx.prisma.task.findFirst({
@@ -774,7 +821,7 @@ export const aiRouter = router({
       const task = await ctx.prisma.task.findUnique({ where: { id: input.taskId }, select: { title: true, description: true } });
       if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
 
-      const labels = await ctx.prisma.label.findMany({ where: { workspaceId: wsId }, select: { name: true } });
+      const labels = await ctx.prisma.label.findMany({ where: { projectId: input.projectId }, select: { name: true } });
       const project = await ctx.prisma.project.findUnique({ where: { id: input.projectId }, select: { workspaceId: true } });
       const members = await ctx.prisma.workspaceMember.findMany({
         where: { workspaceId: project!.workspaceId },
@@ -1029,6 +1076,41 @@ export const aiRouter = router({
       return generateSprintPlan(tasks, input.teamSize, input.sprintDuration);
     }),
 
+  // --- Send Weekly Digest to Team ---
+  sendDigestToTeam: protectedProcedure
+    .input(z.object({ workspaceId: z.string().uuid(), subject: z.string(), html: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireFeature(input.workspaceId, "ai");
+
+      // Get all workspace members' emails
+      const members = await ctx.prisma.workspaceMember.findMany({
+        where: { workspaceId: input.workspaceId },
+        include: { user: { select: { id: true, email: true, name: true } } },
+      });
+
+      const { sendMail, wrap } = await import("../services/email.js");
+      let sent = 0;
+      let failed = 0;
+      for (const member of members) {
+        try {
+          const ok = await sendMail(member.user.email, input.subject, wrap(input.html));
+          if (ok) sent++; else failed++;
+        } catch {
+          failed++;
+        }
+      }
+
+      await logAudit(ctx.prisma, {
+        userId: ctx.user.userId,
+        workspaceId: input.workspaceId,
+        action: "ai.sendDigestToTeam",
+        entityType: "workspace",
+        metadata: { sent, failed, totalMembers: members.length },
+      });
+
+      return { sent, failed, total: members.length };
+    }),
+
   // --- Excel Import: Analyze ---
   importExcel: protectedProcedure
     .input(z.object({ fileUrl: z.string(), projectId: z.string().uuid() }))
@@ -1163,5 +1245,559 @@ export const aiRouter = router({
       });
 
       return { created: taskIds.length, taskIds };
+    }),
+
+  // --- NEW: Natural Language Task Creation ---
+  parseNaturalTask: protectedProcedure
+    .input(z.object({ text: z.string().min(1), projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+      await requireProjectAccess(ctx.prisma, ctx.user.userId, input.projectId);
+
+      const [project, members, labels, columns] = await Promise.all([
+        ctx.prisma.project.findUnique({ where: { id: input.projectId }, select: { name: true } }),
+        ctx.prisma.projectMember.findMany({
+          where: { projectId: input.projectId },
+          include: { user: { select: { id: true, name: true, email: true } } },
+        }),
+        ctx.prisma.label.findMany({ where: { projectId: input.projectId }, select: { name: true } }),
+        ctx.prisma.boardColumn.findMany({ where: { projectId: input.projectId }, select: { id: true, name: true }, orderBy: { position: "asc" } }),
+      ]);
+
+      const result = await parseNaturalLanguageTask(input.text, {
+        projectName: project?.name || "Unknown",
+        members: members.map(m => ({ id: m.user.id, name: m.user.name || "", email: m.user.email })),
+        labels: labels.map(l => l.name),
+        columns: columns.map(c => ({ id: c.id, name: c.name })),
+      });
+
+      return result;
+    }),
+
+  // --- NEW: Create task from NL parse result ---
+  createFromNaturalTask: protectedProcedure
+    .input(z.object({
+      projectId: z.string().uuid(),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      priority: z.string().optional(),
+      taskType: z.string().optional(),
+      assigneeId: z.string().nullable().optional(),
+      labels: z.array(z.string()).optional(),
+      dueDate: z.string().nullable().optional(),
+      columnId: z.string().nullable().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+      await requireProjectAccess(ctx.prisma, ctx.user.userId, input.projectId);
+
+      const maxTask = await ctx.prisma.task.findFirst({ where: { projectId: input.projectId }, orderBy: { taskNumber: "desc" }, select: { taskNumber: true } });
+      const nextNumber = (maxTask?.taskNumber || 0) + 1;
+
+      const validPriorities = ["urgent", "high", "medium", "low", "none"];
+      const validTypes = ["bug", "feature", "story", "task", "epic"];
+
+      // Resolve column
+      let columnId = input.columnId;
+      if (!columnId) {
+        const defaultCol = await ctx.prisma.boardColumn.findFirst({ where: { projectId: input.projectId }, orderBy: { position: "asc" } });
+        columnId = defaultCol?.id || null;
+      }
+
+      // Resolve labels
+      const labelIds: string[] = [];
+      if (input.labels) {
+        for (const name of input.labels) {
+          const label = await ctx.prisma.label.findFirst({
+            where: { projectId: input.projectId, name: { equals: name.trim(), mode: "insensitive" } },
+          });
+          if (label) labelIds.push(label.id);
+        }
+      }
+
+      const task = await ctx.prisma.task.create({
+        data: {
+          projectId: input.projectId,
+          columnId,
+          title: input.title,
+          description: input.description || null,
+          type: (validTypes.includes(input.taskType || "") ? input.taskType : "task") as any,
+          priority: (validPriorities.includes(input.priority || "") ? input.priority : "medium") as any,
+          taskNumber: nextNumber,
+          status: "todo",
+          createdById: ctx.user.userId,
+          assigneeId: input.assigneeId || null,
+          dueDate: input.dueDate ? new Date(input.dueDate) : null,
+          labels: labelIds.length > 0 ? { create: labelIds.map(id => ({ labelId: id })) } : undefined,
+        },
+      });
+
+      return task;
+    }),
+
+  // --- NEW: AI Smart Search ---
+  smartSearch: protectedProcedure
+    .input(z.object({ query: z.string().min(1), workspaceId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireFeature(input.workspaceId, "ai");
+
+      const [members, projects, labels] = await Promise.all([
+        ctx.prisma.projectMember.findMany({
+          where: { project: { workspaceId: input.workspaceId } },
+          include: { user: { select: { id: true, name: true } } },
+          distinct: ["userId"],
+        }),
+        ctx.prisma.project.findMany({ where: { workspaceId: input.workspaceId, deletedAt: null }, select: { id: true, name: true } }),
+        ctx.prisma.label.findMany({
+          where: { project: { workspaceId: input.workspaceId } },
+          select: { name: true },
+          distinct: ["name"],
+        }),
+      ]);
+
+      const result = await aiSmartSearch(input.query, {
+        members: members.map(m => ({ id: m.user.id, name: m.user.name || "" })),
+        labels: [...new Set(labels.map(l => l.name))],
+        projects: projects.map(p => ({ id: p.id, name: p.name })),
+      });
+
+      // Execute the search with resolved filters
+      const where: any = { project: { workspaceId: input.workspaceId, deletedAt: null }, deletedAt: null };
+      const f = result.filters;
+      if (f.status?.length) where.status = { in: f.status };
+      if (f.priority?.length) where.priority = { in: f.priority };
+      if (f.assigneeIds?.length) where.assigneeId = { in: f.assigneeIds };
+      if (f.taskType?.length) where.type = { in: f.taskType };
+      if (f.isOverdue) where.dueDate = { lt: new Date() };
+      if (f.searchText) where.title = { contains: f.searchText, mode: "insensitive" };
+      if (f.projectIds?.length) where.projectId = { in: f.projectIds };
+      if (f.labels?.length) where.labels = { some: { label: { name: { in: f.labels, mode: "insensitive" } } } };
+
+      const tasks = await ctx.prisma.task.findMany({
+        where,
+        include: {
+          assignee: { select: { id: true, name: true, email: true } },
+          project: { select: { id: true, name: true } },
+          labels: { include: { label: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 50,
+      });
+
+      return { interpretation: result.interpretation, filters: result.filters, tasks, totalResults: tasks.length };
+    }),
+
+  // --- NEW: Predictive Due Date ---
+  predictDueDate: protectedProcedure
+    .input(z.object({
+      taskTitle: z.string(),
+      taskDescription: z.string().nullable(),
+      taskType: z.string(),
+      taskPriority: z.string(),
+      storyPoints: z.number().nullable(),
+      projectId: z.string().uuid(),
+      assigneeId: z.string().nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+
+      const historicalTasks = await ctx.prisma.task.findMany({
+        where: { projectId: input.projectId, status: "done", completedAt: { not: null } },
+        select: { title: true, type: true, storyPoints: true, createdAt: true, completedAt: true },
+        orderBy: { completedAt: "desc" },
+        take: 30,
+      });
+
+      let assigneeWorkload = { currentTasks: 0, avgCompletionDays: 3 };
+      if (input.assigneeId) {
+        const [currentCount, completedByAssignee] = await Promise.all([
+          ctx.prisma.task.count({ where: { assigneeId: input.assigneeId, status: { in: ["todo", "in_progress", "in_review"] }, deletedAt: null } }),
+          ctx.prisma.task.findMany({
+            where: { assigneeId: input.assigneeId, status: "done", completedAt: { not: null } },
+            select: { createdAt: true, completedAt: true },
+            orderBy: { completedAt: "desc" },
+            take: 20,
+          }),
+        ]);
+        const avgDays = completedByAssignee.length > 0
+          ? completedByAssignee.reduce((s, t) => s + (t.completedAt!.getTime() - t.createdAt.getTime()) / 86400000, 0) / completedByAssignee.length
+          : 3;
+        assigneeWorkload = { currentTasks: currentCount, avgCompletionDays: avgDays };
+      }
+
+      return predictDueDate(
+        { title: input.taskTitle, description: input.taskDescription, type: input.taskType, priority: input.taskPriority, storyPoints: input.storyPoints },
+        historicalTasks.map(t => ({ title: t.title, type: t.type, storyPoints: t.storyPoints, createdAt: t.createdAt.toISOString(), completedAt: t.completedAt?.toISOString() || null })),
+        assigneeWorkload
+      );
+    }),
+
+  // --- NEW: Auto Standup ---
+  autoStandup: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+      await requireProjectAccess(ctx.prisma, ctx.user.userId, input.projectId);
+
+      const yesterday = new Date(Date.now() - 86400000);
+      const members = await ctx.prisma.projectMember.findMany({
+        where: { projectId: input.projectId },
+        include: { user: { select: { id: true, name: true } } },
+      });
+
+      const memberData = await Promise.all(members.map(async (m) => {
+        const [activities, currentTasks] = await Promise.all([
+          ctx.prisma.activity.findMany({
+            where: { userId: m.userId, projectId: input.projectId, createdAt: { gte: yesterday } },
+            select: { action: true, description: true, entityId: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          }),
+          ctx.prisma.task.findMany({
+            where: { assigneeId: m.userId, projectId: input.projectId, status: { in: ["todo", "in_progress", "in_review"] }, deletedAt: null },
+            select: { title: true, status: true, priority: true, dueDate: true },
+            take: 10,
+          }),
+        ]);
+
+        return {
+          userId: m.userId,
+          name: m.user.name || "Unknown",
+          yesterdayActivity: activities.map(a => ({
+            action: a.action,
+            taskTitle: a.description || "Task activity",
+            timestamp: a.createdAt.toISOString(),
+          })),
+          currentTasks: currentTasks.map(t => ({
+            title: t.title,
+            status: t.status,
+            priority: t.priority,
+            dueDate: t.dueDate?.toISOString().split("T")[0] || null,
+          })),
+        };
+      }));
+
+      // Get sprint context
+      const activeSprint = await ctx.prisma.sprint.findFirst({
+        where: { projectId: input.projectId, isActive: true },
+        select: { id: true, name: true, endDate: true },
+      });
+      let sprintContext;
+      if (activeSprint) {
+        const [total, completed] = await Promise.all([
+          ctx.prisma.sprintTask.count({ where: { sprintId: activeSprint.id } }),
+          ctx.prisma.sprintTask.count({ where: { sprintId: activeSprint.id, task: { status: "done", deletedAt: null } } }),
+        ]);
+        sprintContext = {
+          name: activeSprint.name,
+          progress: total > 0 ? Math.round((completed / total) * 100) : 0,
+          daysRemaining: activeSprint.endDate ? Math.max(0, Math.ceil((activeSprint.endDate.getTime() - Date.now()) / 86400000)) : 0,
+        };
+      }
+
+      return generateAutoStandup(memberData, sprintContext);
+    }),
+
+  // --- NEW: Smart Notifications ---
+  rankNotifications: protectedProcedure
+    .input(z.object({ workspaceId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireFeature(input.workspaceId, "ai");
+
+      const notifications = await ctx.prisma.notification.findMany({
+        where: { userId: ctx.user.userId },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      });
+
+      const currentTaskCount = await ctx.prisma.task.count({
+        where: { assigneeId: ctx.user.userId, status: { in: ["todo", "in_progress", "in_review"] }, deletedAt: null },
+      });
+
+      // Get user role in workspace
+      const membership = await ctx.prisma.projectMember.findFirst({
+        where: { project: { workspaceId: input.workspaceId }, userId: ctx.user.userId },
+        select: { role: true },
+      });
+
+      const notifData = notifications.map(n => ({
+        id: n.id,
+        type: n.type,
+        title: n.title || "",
+        body: n.message || "",
+        createdAt: n.createdAt.toISOString(),
+      }));
+
+      return rankNotifications(notifData, { currentTasks: currentTaskCount, role: membership?.role || "developer" });
+    }),
+
+  // --- NEW: Workflow Analysis ---
+  analyzeWorkflow: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+      await requireProjectAccess(ctx.prisma, ctx.user.userId, input.projectId);
+
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+
+      // Gather workflow data — Activity stores field/oldValue/newValue in metadata JSON
+      const activities = await ctx.prisma.activity.findMany({
+        where: {
+          projectId: input.projectId,
+          action: "updated",
+          createdAt: { gte: thirtyDaysAgo },
+        },
+        select: { metadata: true, createdAt: true, userId: true },
+      });
+
+      // Status transitions — parse from metadata
+      const transitionMap = new Map<string, { count: number; totalDays: number }>();
+      for (const a of activities) {
+        const meta = a.metadata as any;
+        if (!meta || meta.field !== "status" || !meta.oldValue || !meta.newValue) continue;
+        const key = `${meta.oldValue}→${meta.newValue}`;
+        const existing = transitionMap.get(key) || { count: 0, totalDays: 0 };
+        existing.count++;
+        transitionMap.set(key, existing);
+      }
+      const statusTransitions = [...transitionMap.entries()].map(([key, val]) => {
+        const [from, to] = key.split("→");
+        return { from: from!, to: to!, avgDays: val.totalDays / val.count || 1, count: val.count };
+      });
+
+      // Bottlenecks: avg time tasks spend in each status
+      const tasks = await ctx.prisma.task.findMany({
+        where: { projectId: input.projectId, deletedAt: null },
+        select: { status: true, updatedAt: true, createdAt: true },
+      });
+      const statusGroups = new Map<string, number[]>();
+      for (const t of tasks) {
+        const days = (Date.now() - t.updatedAt.getTime()) / 86400000;
+        const arr = statusGroups.get(t.status) || [];
+        arr.push(days);
+        statusGroups.set(t.status, arr);
+      }
+      const bottlenecks = [...statusGroups.entries()].map(([status, days]) => ({
+        status,
+        avgDays: days.reduce((s, d) => s + d, 0) / days.length,
+        taskCount: days.length,
+      }));
+
+      // Team metrics
+      const members = await ctx.prisma.projectMember.findMany({
+        where: { projectId: input.projectId },
+        include: { user: { select: { id: true, name: true } } },
+      });
+      const teamMetrics = await Promise.all(members.map(async (m) => {
+        const completed = await ctx.prisma.task.findMany({
+          where: { assigneeId: m.userId, projectId: input.projectId, status: "done", completedAt: { not: null } },
+          select: { createdAt: true, completedAt: true },
+          orderBy: { completedAt: "desc" },
+          take: 20,
+        });
+        const avgCycle = completed.length > 0
+          ? completed.reduce((s, t) => s + (t.completedAt!.getTime() - t.createdAt.getTime()) / 86400000, 0) / completed.length
+          : 0;
+        return { name: m.user.name || "Unknown", avgCycleTime: avgCycle, completedTasks: completed.length };
+      }));
+
+      // Overdue by status
+      const overdueTasks = await ctx.prisma.task.findMany({
+        where: { projectId: input.projectId, dueDate: { lt: new Date() }, status: { notIn: ["done", "cancelled"] }, deletedAt: null },
+        select: { status: true },
+      });
+      const overdueMap = new Map<string, number>();
+      for (const t of overdueTasks) {
+        overdueMap.set(t.status, (overdueMap.get(t.status) || 0) + 1);
+      }
+      const overdueByStatus = [...overdueMap.entries()].map(([status, count]) => ({ status, count }));
+
+      const allCompleted = await ctx.prisma.task.findMany({
+        where: { projectId: input.projectId, status: "done", completedAt: { not: null }, deletedAt: null },
+        select: { createdAt: true, completedAt: true },
+        take: 100,
+      });
+      const avgCycleTimeDays = allCompleted.length > 0
+        ? allCompleted.reduce((s, t) => s + (t.completedAt!.getTime() - t.createdAt.getTime()) / 86400000, 0) / allCompleted.length
+        : 0;
+
+      return analyzeWorkflow({
+        statusTransitions,
+        bottlenecks,
+        teamMetrics,
+        overdueByStatus,
+        totalTasks: tasks.length,
+        avgCycleTimeDays,
+      });
+    }),
+
+  // --- NEW: Comment Thread Summary ---
+  summarizeThread: protectedProcedure
+    .input(z.object({ taskId: z.string().uuid(), projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+
+      const task = await ctx.prisma.task.findUnique({ where: { id: input.taskId }, select: { title: true } });
+      const comments = await ctx.prisma.comment.findMany({
+        where: { taskId: input.taskId },
+        include: { user: { select: { name: true } }, reactions: true },
+        orderBy: { createdAt: "asc" },
+      });
+
+      if (comments.length < 2) {
+        return { summary: "Not enough comments to summarize.", keyDecisions: [], openQuestions: [], actionItems: [] };
+      }
+
+      return summarizeCommentThread(
+        comments.map(c => ({
+          author: c.user.name || "Unknown",
+          content: c.content,
+          createdAt: c.createdAt.toISOString(),
+          reactions: c.reactions.map((r: any) => r.emoji),
+        })),
+        task?.title || "Unknown task"
+      );
+    }),
+
+  // --- NEW: Live Duplicate Prevention ---
+  findSimilarLive: protectedProcedure
+    .input(z.object({ partialTitle: z.string().min(5), projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+
+      const existing = await ctx.prisma.task.findMany({
+        where: { projectId: input.projectId, deletedAt: null, status: { notIn: ["cancelled"] } },
+        select: { id: true, title: true, status: true, taskNumber: true },
+        take: 100,
+      });
+
+      return findSimilarTasksLive(input.partialTitle, existing);
+    }),
+
+  // --- NEW: AI Text Copilot ---
+  enhanceText: protectedProcedure
+    .input(z.object({
+      text: z.string().min(1),
+      mode: z.enum(["improve", "professional", "concise", "expand", "fix_grammar", "translate"]),
+      fieldType: z.enum(["title", "description", "comment"]),
+      projectId: z.string().uuid(),
+      targetLanguage: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+      return enhanceText(input.text, input.mode, input.fieldType, input.targetLanguage);
+    }),
+
+  // --- NEW: Project Health Dashboard ---
+  projectHealthDashboard: protectedProcedure
+    .input(z.object({ workspaceId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireFeature(input.workspaceId, "ai");
+
+      const projects = await ctx.prisma.project.findMany({
+        where: { workspaceId: input.workspaceId, deletedAt: null },
+        select: { id: true, name: true },
+      });
+
+      const projectData = await Promise.all(projects.map(async (p) => {
+        const [totalTasks, completedTasks, overdueTasks, bugCount, members, sprint] = await Promise.all([
+          ctx.prisma.task.count({ where: { projectId: p.id, deletedAt: null } }),
+          ctx.prisma.task.count({ where: { projectId: p.id, status: "done", deletedAt: null } }),
+          ctx.prisma.task.count({ where: { projectId: p.id, dueDate: { lt: new Date() }, status: { notIn: ["done", "cancelled"] }, deletedAt: null } }),
+          ctx.prisma.task.count({ where: { projectId: p.id, type: "bug", status: { notIn: ["done", "cancelled"] }, deletedAt: null } }),
+          ctx.prisma.projectMember.count({ where: { projectId: p.id } }),
+          ctx.prisma.sprint.findFirst({
+            where: { projectId: p.id, isActive: true },
+            select: { id: true, name: true },
+          }),
+        ]);
+
+        let sprintProgress = 0;
+        let activeSprint = null;
+        if (sprint) {
+          const [spTotal, spDone] = await Promise.all([
+            ctx.prisma.sprintTask.count({ where: { sprintId: sprint.id } }),
+            ctx.prisma.sprintTask.count({ where: { sprintId: sprint.id, task: { status: "done", deletedAt: null } } }),
+          ]);
+          sprintProgress = spTotal > 0 ? Math.round((spDone / spTotal) * 100) : 0;
+          activeSprint = { name: sprint.name, progress: sprintProgress };
+        }
+
+        // Avg cycle time
+        const completed = await ctx.prisma.task.findMany({
+          where: { projectId: p.id, status: "done", completedAt: { not: null }, deletedAt: null },
+          select: { createdAt: true, completedAt: true },
+          take: 30,
+          orderBy: { completedAt: "desc" },
+        });
+        const avgCycle = completed.length > 0
+          ? completed.reduce((s, t) => s + (t.completedAt!.getTime() - t.createdAt.getTime()) / 86400000, 0) / completed.length
+          : 0;
+
+        return { id: p.id, name: p.name, totalTasks, completedTasks, overdueTasks, bugCount, avgCycleTimeDays: avgCycle, activeSprint, teamSize: members };
+      }));
+
+      return generateProjectHealthDashboard(projectData);
+    }),
+
+  // --- NEW: Smart Template Suggestions ---
+  suggestTemplates: protectedProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+
+      const [recentTasks, templates] = await Promise.all([
+        ctx.prisma.task.findMany({
+          where: { projectId: input.projectId, deletedAt: null },
+          select: { title: true, description: true, type: true, priority: true, labels: { include: { label: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        }),
+        ctx.prisma.taskTemplate.findMany({
+          where: { workspaceId: wsId },
+          select: { name: true },
+        }),
+      ]);
+
+      return suggestTemplates(
+        recentTasks.map(t => ({
+          title: t.title,
+          description: t.description,
+          type: t.type,
+          priority: t.priority,
+          labels: t.labels.map((l: any) => l.label.name),
+        })),
+        templates.map(t => t.name)
+      );
+    }),
+
+  // --- NEW: Enhanced Meeting Transcript ---
+  parseTranscript: protectedProcedure
+    .input(z.object({ transcript: z.string().min(10), projectId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const wsId = await getWorkspaceIdFromProject(ctx.prisma, input.projectId);
+      await requireFeature(wsId, "ai");
+
+      const [project, members] = await Promise.all([
+        ctx.prisma.project.findUnique({ where: { id: input.projectId }, select: { name: true } }),
+        ctx.prisma.projectMember.findMany({
+          where: { projectId: input.projectId },
+          include: { user: { select: { id: true, name: true } } },
+        }),
+      ]);
+
+      return extractFromTranscript(input.transcript, {
+        projectName: project?.name || "Unknown",
+        members: members.map(m => ({ id: m.user.id, name: m.user.name || "" })),
+      });
     }),
 });

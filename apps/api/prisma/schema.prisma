@@ -165,6 +165,9 @@ model User {
   taskTemplates           TaskTemplate[]
   taskVotes               TaskVote[]
   resourceCapacities      ResourceCapacity[]
+  createdDocuments        Document[]         @relation("DocumentCreator")
+  uploadedDocVersions     DocumentVersion[]
+  createdDocFolders       DocumentFolder[]
 
   @@index([googleId], map: "IX_Users_GoogleId")
   @@map("Users")
@@ -378,6 +381,10 @@ model Project {
   dashboardWidgets DashboardWidget[]
   forms            Form[]
   crossProjectTags TaskProjectTag[]
+  documents          Document[]
+  documentFolders    DocumentFolder[]
+  documentTags       DocumentTag[]
+  documentCategories DocumentCategory[]
 
   @@unique([workspaceId, slug])
   @@index([ownerId])
@@ -513,6 +520,7 @@ model Task {
   gitCommits        GitCommit[]
   votes             TaskVote[]
   crossProjectTags  TaskProjectTag[]
+  documentLinks     DocumentTaskLink[]
 
   @@index([projectId])
   @@index([columnId])
@@ -1451,4 +1459,138 @@ model TaskProjectTag {
   @@index([taskId])
   @@index([projectId])
   @@map("TaskProjectTags")
+}
+
+// ─── Document Version Control ───────────────────────────────────────
+
+model DocumentCategory {
+  id        String   @id @default(uuid()) @map("Id") @db.Uuid
+  projectId String   @map("ProjectId") @db.Uuid
+  parentId  String?  @map("ParentId") @db.Uuid
+  name      String   @map("Name") @db.VarChar(200)
+  color     String   @default("#6366f1") @map("Color") @db.VarChar(7)
+  icon      String?  @map("Icon") @db.VarChar(50)
+  position  Int      @default(0) @map("Position")
+  createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("UpdatedAt") @db.Timestamptz
+
+  project   Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent    DocumentCategory?   @relation("CategoryNesting", fields: [parentId], references: [id], onDelete: SetNull)
+  children  DocumentCategory[]  @relation("CategoryNesting")
+  documents Document[]
+
+  @@index([projectId])
+  @@index([parentId])
+  @@map("DocumentCategories")
+}
+
+model DocumentFolder {
+  id        String   @id @default(uuid()) @map("Id") @db.Uuid
+  projectId String   @map("ProjectId") @db.Uuid
+  parentId  String?  @map("ParentId") @db.Uuid
+  name      String   @map("Name") @db.VarChar(255)
+  createdById String @map("CreatedById") @db.Uuid
+  createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("UpdatedAt") @db.Timestamptz
+
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent    DocumentFolder?  @relation("FolderNesting", fields: [parentId], references: [id], onDelete: SetNull)
+  children  DocumentFolder[] @relation("FolderNesting")
+  createdBy User             @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@index([projectId])
+  @@index([parentId])
+  @@map("DocumentFolders")
+}
+
+model Document {
+  id               String    @id @default(uuid()) @map("Id") @db.Uuid
+  projectId        String    @map("ProjectId") @db.Uuid
+  folderId         String?   @map("FolderId") @db.Uuid
+  categoryId       String?   @map("CategoryId") @db.Uuid
+  title            String    @map("Title") @db.VarChar(500)
+  description      String?   @map("Description")
+  currentVersionId String?   @unique @map("CurrentVersionId") @db.Uuid
+  createdById      String    @map("CreatedById") @db.Uuid
+  totalVersions    Int       @default(1) @map("TotalVersions")
+  fileType         String    @default("other") @map("FileType") @db.VarChar(50)
+  deletedAt        DateTime? @map("DeletedAt") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("CreatedAt") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("UpdatedAt") @db.Timestamptz
+
+  project        Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folder         DocumentFolder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  category       DocumentCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy      User               @relation("DocumentCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  currentVersion DocumentVersion?   @relation("CurrentDocVersion", fields: [currentVersionId], references: [id])
+  versions       DocumentVersion[]  @relation("DocVersions")
+  tags           DocumentTagLink[]
+  taskLinks      DocumentTaskLink[]
+
+  @@index([projectId])
+  @@index([folderId])
+  @@index([categoryId])
+  @@index([createdById])
+  @@index([deletedAt])
+  @@map("Documents")
+}
+
+model DocumentVersion {
+  id            String   @id @default(uuid()) @map("Id") @db.Uuid
+  documentId    String   @map("DocumentId") @db.Uuid
+  versionNumber Int      @map("VersionNumber")
+  fileName      String   @map("FileName") @db.VarChar(255)
+  fileUrl       String   @map("FileUrl")
+  fileSize      Int      @map("FileSize")
+  mimeType      String   @map("MimeType") @db.VarChar(100)
+  versionNote   String?  @map("VersionNote")
+  uploadedById  String   @map("UploadedById") @db.Uuid
+  createdAt     DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+
+  document       Document  @relation("DocVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  currentFor     Document? @relation("CurrentDocVersion")
+  uploadedBy     User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([uploadedById])
+  @@map("DocumentVersions")
+}
+
+model DocumentTag {
+  id        String   @id @default(uuid()) @map("Id") @db.Uuid
+  projectId String   @map("ProjectId") @db.Uuid
+  name      String   @map("Name") @db.VarChar(100)
+  color     String   @default("#3b82f6") @map("Color") @db.VarChar(7)
+  createdAt DateTime @default(now()) @map("CreatedAt") @db.Timestamptz
+
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documents DocumentTagLink[]
+
+  @@index([projectId])
+  @@map("DocumentTags")
+}
+
+model DocumentTagLink {
+  documentId String @map("DocumentId") @db.Uuid
+  tagId      String @map("TagId") @db.Uuid
+
+  document Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tag      DocumentTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, tagId])
+  @@index([tagId])
+  @@map("DocumentTagLinks")
+}
+
+model DocumentTaskLink {
+  documentId String @map("DocumentId") @db.Uuid
+  taskId     String @map("TaskId") @db.Uuid
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, taskId])
+  @@index([taskId])
+  @@map("DocumentTaskLinks")
 }

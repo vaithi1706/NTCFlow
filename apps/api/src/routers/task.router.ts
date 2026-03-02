@@ -7,6 +7,7 @@ import { requirePermission, checkPermission, getWorkspaceIdFromProject, requireP
 import { logAudit } from "../utils/audit.js";
 import { notifyIntegrations } from "../services/integrations.js";
 import { fireWebhooks } from "../services/webhooks.js";
+import { runAutomations } from "../services/automations.js";
 import { checkLimit } from "../middleware/subscription.js";
 
 const taskTypeEnum = z.enum(["bug", "feature", "story", "task", "epic"]);
@@ -200,6 +201,19 @@ export const taskRouter = router({
         projectId: task.projectId,
       }).catch(() => {});
 
+      // Run automation rules
+      runAutomations(ctx.prisma as any, "task_created", {
+        taskId: task.id,
+        projectId: task.projectId,
+        title: task.title,
+        type: task.type,
+        status: task.status,
+        priority: task.priority,
+        assigneeIds: task.assignees.map(a => a.user.id),
+        labelIds: task.labels.map(l => l.labelId),
+        columnId: task.columnId,
+      }, ctx.user.userId).catch(() => {});
+
       return task;
     }),
 
@@ -265,6 +279,21 @@ export const taskRouter = router({
         priority: task.priority,
         changes: Object.keys(updateData),
       }).catch(() => {});
+
+      // Run automation rules on status change
+      if (data.status || data.columnId) {
+        runAutomations(ctx.prisma as any, "task_moved_to_column", {
+          taskId: task.id,
+          projectId: task.projectId,
+          title: task.title,
+          type: task.type,
+          status: task.status,
+          priority: task.priority,
+          assigneeIds: [],
+          labelIds: [],
+          columnId: task.columnId,
+        }, ctx.user.userId).catch(() => {});
+      }
 
       if (data.status === "done") {
         notifyIntegrations(ctx.prisma, wsIdForNotify, "task.completed", {

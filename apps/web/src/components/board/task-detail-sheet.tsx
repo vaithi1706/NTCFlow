@@ -32,9 +32,14 @@ import { AiTaskHelper } from "@/components/ai/ai-task-helper";
 import { AiBreakdownDialog } from "@/components/ai/ai-breakdown-dialog";
 import { AiEstimateButton } from "@/components/ai/ai-estimate-button";
 import { AiAutoTriage } from "@/components/ai/ai-auto-triage";
+import { AiPredictDueDate } from "@/components/ai/ai-predict-due-date";
+import { AiCommentSummary } from "@/components/ai/ai-comment-summary";
+import { AiTextCopilot } from "@/components/ai/ai-text-copilot";
+import { AiDuplicateLive } from "@/components/ai/ai-duplicate-live";
 import { TaskApproval } from "@/components/shared/task-approval";
 import { MentionTextarea } from "@/components/shared/mention-textarea";
 import { TaskLinks } from "@/components/tasks/task-links";
+import { TaskDocuments } from "@/components/documents/task-documents";
 import { TaskWatchers } from "@/components/tasks/task-watchers";
 import { VoteButton } from "@/components/shared/vote-button";
 import { SlaIndicator } from "@/components/shared/sla-indicator";
@@ -538,6 +543,18 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
                   />
                 </PopoverContent>
               </Popover>
+              {!task.dueDate && (
+                <AiPredictDueDate
+                  taskTitle={task.title}
+                  taskDescription={task.description}
+                  taskType={task.type}
+                  taskPriority={task.priority}
+                  storyPoints={task.storyPoints}
+                  projectId={task.projectId}
+                  assigneeId={task.assigneeId}
+                  onApply={(date) => updateMutation.mutate({ id: task.id, dueDate: new Date(date).toISOString() })}
+                />
+              )}
             </div>
           </div>
 
@@ -637,6 +654,9 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
               <MessageSquare className="h-3 w-3" />
               {comments.length > 0 && <span>{comments.length}</span>}
             </TabsTrigger>
+            {comments.length >= 2 && (
+              <AiCommentSummary taskId={task.id} projectId={task.projectId} commentCount={comments.length} />
+            )}
             <TabsTrigger value="activity">
               <Activity className="h-3 w-3 mr-1" />Activity
             </TabsTrigger>
@@ -655,9 +675,15 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
                     className="min-h-[120px] resize-none font-mono text-sm"
                     autoFocus
                   />
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
                     <Button size="sm" onClick={handleDescriptionSave}>Save</Button>
                     <Button size="sm" variant="ghost" onClick={() => { setEditingDescription(false); setDescriptionValue(task.description || ""); }}>Cancel</Button>
+                    <AiTextCopilot
+                      text={descriptionValue}
+                      fieldType="description"
+                      projectId={task.projectId}
+                      onApply={(newText) => setDescriptionValue(newText)}
+                    />
                   </div>
                 </div>
               ) : (
@@ -741,6 +767,9 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
 
             {/* Task Links */}
             <TaskLinks taskId={task.id} projectId={task.projectId} />
+
+            {/* Linked Documents */}
+            <TaskDocuments taskId={task.id} projectId={task.projectId} />
 
             {/* Development / Git */}
             <TaskDevelopmentSection taskId={task.id} />

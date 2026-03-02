@@ -87,7 +87,7 @@ export function wrap(body: string): string {
           ${body}
         </div>
         <div style="padding:16px 28px;border-top:1px solid #2a2a3a;text-align:center">
-          <p style="margin:0;color:#6b6b80;font-size:11px">This is an automated notification from DKFlow · <a href="${process.env.APP_URL || 'http://72.61.173.123'}" style="color:#818cf8;text-decoration:none">Open DKFlow</a></p>
+          <p style="margin:0;color:#6b6b80;font-size:11px">This is an automated notification from DKFlow · <a href="${process.env.APP_URL || 'https://dkflow.in'}" style="color:#818cf8;text-decoration:none">Open DKFlow</a></p>
         </div>
       </div>
     </div>
@@ -98,7 +98,7 @@ function actionButton(url: string, label: string): string {
   return `<a href="${url}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin-top:16px">${label}</a>`;
 }
 
-const APP_URL = process.env.APP_URL || "http://72.61.173.123";
+const APP_URL = process.env.APP_URL || "https://dkflow.in";
 
 export async function sendTaskAssignedEmail(to: string, data: { assignerName: string; taskTitle: string; taskKey: string; taskUrl?: string }): Promise<boolean> {
   const html = wrap(`

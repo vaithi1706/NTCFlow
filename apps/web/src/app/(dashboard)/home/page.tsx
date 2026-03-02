@@ -26,6 +26,9 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AiAnomalyAlerts } from "@/components/ai/ai-anomaly-alerts";
 import { AiWeeklyDigest } from "@/components/ai/ai-weekly-digest";
+import { AiSmartSearch } from "@/components/ai/ai-smart-search";
+import { AiProjectHealthDashboard } from "@/components/ai/ai-project-health-dashboard";
+import { AiSmartNotifications } from "@/components/ai/ai-smart-notifications";
 
 function getStarredProjects(): string[] {
   if (typeof window === "undefined") return [];
@@ -266,8 +269,13 @@ export default function HomePage() {
                 <AiAnomalyAlerts workspaceId={workspaceId} />
               </div>
               <div className="flex flex-col gap-3 justify-center items-center p-4 rounded-xl border border-border/50 bg-gradient-to-br from-violet-500/[0.03] to-purple-500/[0.03]">
-                <p className="text-sm text-muted-foreground text-center">Generate a weekly digest for your team</p>
-                <AiWeeklyDigest workspaceId={workspaceId} />
+                <p className="text-sm text-muted-foreground text-center">AI-powered tools</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <AiWeeklyDigest workspaceId={workspaceId} />
+                  <AiSmartSearch workspaceId={workspaceId} workspaceSlug={wsSlug} />
+                  <AiProjectHealthDashboard workspaceId={workspaceId} />
+                  <AiSmartNotifications workspaceId={workspaceId} />
+                </div>
               </div>
             </section>
           )}

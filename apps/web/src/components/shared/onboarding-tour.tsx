@@ -149,7 +149,7 @@ export function HelpButton() {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-4 right-4 z-50 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors flex items-center justify-center text-lg font-bold"
+      className="fixed bottom-4 right-4 z-40 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors flex items-center justify-center text-lg font-bold"
       title="Start product tour"
     >
       ?

@@ -43,8 +43,23 @@ export function AiRiskPredictor({ projectId, sprintId }: { projectId: string; sp
         </Button>
       </div>
 
-      {!data && !riskMutation.isPending && (
+      {!data && !riskMutation.isPending && !riskMutation.isError && (
         <p className="text-xs text-muted-foreground text-center py-4">Click Analyze to predict sprint completion risk</p>
+      )}
+
+      {riskMutation.isError && (
+        <div className="text-center py-4 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            {riskMutation.error.message.includes("No active sprint")
+              ? "No active sprint found. Start a sprint first to analyze risk."
+              : riskMutation.error.message.includes("Pro")
+              ? "Upgrade to Pro to use AI features."
+              : `Error: ${riskMutation.error.message}`}
+          </p>
+          {riskMutation.error.message.includes("No active sprint") && (
+            <p className="text-[11px] text-muted-foreground/60">Create and start a sprint from the Sprints page, then come back to analyze.</p>
+          )}
+        </div>
       )}
 
       {riskMutation.isPending && (

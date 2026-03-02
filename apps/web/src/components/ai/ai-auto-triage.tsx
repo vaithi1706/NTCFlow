@@ -56,7 +56,7 @@ export function AiAutoTriage({ taskId, projectId, onApplied }: AiAutoTriageProps
     <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 text-sm">
       <div className="flex items-center gap-2">
         <Bot className="h-3.5 w-3.5 text-violet-400 flex-shrink-0" />
-        <span className="text-violet-200">🤖 AI suggests: {suggestions.join(", ")}</span>
+        <span className="text-violet-200">AI suggests: {suggestions.join(", ")}</span>
       </div>
       <div className="flex items-center gap-1 flex-shrink-0 ml-2">
         <Button

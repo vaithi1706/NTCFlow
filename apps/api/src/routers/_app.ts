@@ -43,6 +43,8 @@ import { waitlistRouter } from "./waitlist.router.js";
 import { reportRouter } from "./report.router.js";
 import { crossProjectRouter } from "./crossProject.router.js";
 import { resourcePlanningRouter } from "./resourcePlanning.router.js";
+import { engineRouter } from "./engine.router.js";
+import { documentRouter } from "./document.router.js";
 
 export const appRouter = router({
   auth: authRouter,
@@ -89,6 +91,8 @@ export const appRouter = router({
   report: reportRouter,
   crossProject: crossProjectRouter,
   resourcePlanning: resourcePlanningRouter,
+  engine: engineRouter,
+  document: documentRouter,
 });
 
 export type AppRouter = typeof appRouter;

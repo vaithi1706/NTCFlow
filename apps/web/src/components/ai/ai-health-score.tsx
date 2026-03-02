@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Activity, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Activity, Loader2, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/api/trpc";
@@ -110,7 +110,7 @@ export function AiHealthScore({ projectId }: { projectId: string }) {
                 <ul className="mt-1 space-y-1">
                   {data.suggestions.map((s, i) => (
                     <li key={i} className="text-xs text-foreground/80 flex items-start gap-1.5">
-                      <span className="text-violet-400 mt-0.5">💡</span>{s}
+                      <Sparkles className="h-3.5 w-3.5 text-violet-400 mt-0.5 shrink-0" />{s}
                     </li>
                   ))}
                 </ul>

@@ -14,6 +14,11 @@ import { BulkActionBar } from "@/components/shared/bulk-action-bar";
 import { useAuthStore } from "@/stores/auth-store";
 import { isToday, isThisWeek, isPast } from "date-fns";
 import { AiExcelImport } from "@/components/ai/ai-excel-import";
+import { AiNaturalTask } from "@/components/ai/ai-natural-task";
+import { AiAutoStandup } from "@/components/ai/ai-auto-standup";
+import { AiWorkflowOptimizer } from "@/components/ai/ai-workflow-optimizer";
+import { AiTemplateSuggestions } from "@/components/ai/ai-template-suggestions";
+import { AiTranscriptParser } from "@/components/ai/ai-transcript-parser";
 
 const emptyFilters: Filters = { priority: [], assignee: [], label: [], taskType: [], dueDate: null };
 
@@ -135,8 +140,13 @@ export default function BoardPage() {
           />
         </div>
       )}
-      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border/50">
+      <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-border/50 overflow-x-auto scrollbar-none">
+        <AiNaturalTask projectId={projectId} onCreated={() => refetchBoard()} />
         <AiExcelImport projectId={projectId} onComplete={() => refetchBoard()} />
+        <AiAutoStandup projectId={projectId} />
+        <AiWorkflowOptimizer projectId={projectId} />
+        <AiTemplateSuggestions projectId={projectId} workspaceId={workspaceId || ""} />
+        <AiTranscriptParser projectId={projectId} onTasksCreated={() => refetchBoard()} />
       </div>
       {isLoading ? (
         <BoardSkeleton />

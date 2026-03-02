@@ -61,6 +61,34 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } });
 
+// Document uploads (separate storage for version control)
+const docUploadsDir2 = "/home/ubuntu/dkflow/uploads/documents";
+if (!fs.existsSync(docUploadsDir2)) fs.mkdirSync(docUploadsDir2, { recursive: true });
+const docStorage2 = multer.diskStorage({
+  destination: (_req: any, _file: any, cb: any) => cb(null, docUploadsDir2),
+  filename: (_req: any, file: any, cb: any) => cb(null, `${Date.now()}-${file.originalname}`),
+});
+const docUpload2 = multer({ storage: docStorage2, limits: { fileSize: 50 * 1024 * 1024 } });
+
+app.post("/api/document-upload", docUpload2.single("file"), async (req: any, res: any) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
+    verifyToken(authHeader.slice(7));
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "No file" });
+    res.json({
+      fileName: file.originalname,
+      fileUrl: `/uploads/documents/${file.filename}`,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    });
+  } catch (err: any) {
+    logger.error("Document upload error: " + (err?.message || err));
+    res.status(500).json({ error: "Document upload failed", detail: err?.message });
+  }
+});
+
 app.post("/api/upload", upload.single("file"), async (req: any, res: any) => {
   try {
     const authHeader = req.headers.authorization;
@@ -101,8 +129,12 @@ app.post("/api/upload", upload.single("file"), async (req: any, res: any) => {
   }
 });
 
-// Serve uploads
 app.use("/uploads", express.static(uploadsDir));
+
+// ─── Microsoft Teams Meetings ────────────────────────────
+import meetingsRouter from "./routers/meetings.router.js";
+app.use("/api/meetings", meetingsRouter);
+app.use("/api/auth/microsoft", meetingsRouter);
 
 // ─── Git Webhook Endpoint ────────────────────────────────
 app.post("/api/webhooks/git/:integrationId", async (req: any, res: any) => {

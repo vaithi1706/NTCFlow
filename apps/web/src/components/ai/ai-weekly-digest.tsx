@@ -14,6 +14,17 @@ import { trpc } from "@/lib/api/trpc";
 import { Sparkles, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 
+// Strip inline styles from AI-generated email HTML so the preview uses the app theme
+function stripInlineStyles(html: string): string {
+  return html
+    .replace(/\s*style="[^"]*"/gi, "")
+    .replace(/<h([12])/g, '<h$1 class="digest-heading"')
+    .replace(/<h3/g, '<h3 class="digest-subheading"')
+    .replace(/<li/g, '<li class="digest-item"')
+    .replace(/<strong/g, '<strong class="digest-strong"')
+    .replace(/<span([^>]*)>(\d+%?)<\/span>/g, '<span class="digest-stat"$1>$2</span>');
+}
+
 interface AiWeeklyDigestProps {
   workspaceId: string;
 }
@@ -22,6 +33,14 @@ export function AiWeeklyDigest({ workspaceId }: AiWeeklyDigestProps) {
   const [open, setOpen] = useState(false);
 
   const mutation = trpc.ai.generateWeeklyDigest.useMutation({
+    onError: (err) => toast.error(err.message),
+  });
+
+  const sendMutation = trpc.ai.sendDigestToTeam.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Digest emailed to ${data.sent} team member${data.sent !== 1 ? "s" : ""}${data.failed ? ` (${data.failed} failed)` : ""}`);
+      setOpen(false);
+    },
     onError: (err) => toast.error(err.message),
   });
 
@@ -38,7 +57,7 @@ export function AiWeeklyDigest({ workspaceId }: AiWeeklyDigestProps) {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20">
@@ -62,33 +81,82 @@ export function AiWeeklyDigest({ workspaceId }: AiWeeklyDigestProps) {
                 <span className="text-sm text-muted-foreground">{mutation.data.subject}</span>
               </div>
 
-              <div className="border border-border rounded-lg p-4 bg-muted overflow-y-auto flex-1 min-h-0 prose prose-invert prose-sm max-w-none
-                [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-violet-400 [&_h1]:mb-2
-                [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-blue-400 [&_h2]:mb-2 [&_h2]:mt-4
-                [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-purple-400 [&_h3]:mb-1
-                [&_p]:text-sm [&_p]:text-muted-foreground [&_p]:mb-2 [&_p]:leading-relaxed
-                [&_ul]:text-sm [&_ul]:text-muted-foreground [&_ul]:space-y-1 [&_ul]:mb-3
-                [&_li]:text-sm [&_li]:text-muted-foreground
-                [&_strong]:text-foreground
-                [&_a]:text-violet-400 [&_a]:no-underline
-                [&_hr]:border-border [&_hr]:my-3
-                [&_table]:w-full [&_table]:text-sm
-                [&_th]:text-left [&_th]:p-2 [&_th]:text-muted-foreground [&_th]:border-b [&_th]:border-border
-                [&_td]:p-2 [&_td]:text-muted-foreground [&_td]:border-b [&_td]:border-border
-              ">
-                <div dangerouslySetInnerHTML={{ __html: mutation.data.html }} />
+              <div className="border border-border rounded-lg p-5 bg-card overflow-y-auto flex-1 min-h-0 digest-preview">
+                <div dangerouslySetInnerHTML={{ __html: stripInlineStyles(mutation.data.html) }} />
               </div>
 
               <DialogFooter className="shrink-0">
                 <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
-                <Button className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500" onClick={() => { toast.success("Digest sent to team!"); setOpen(false); }}>
-                  <Mail className="h-4 w-4 mr-2" />Send to Team
+                <Button
+                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500"
+                  disabled={sendMutation.isPending}
+                  onClick={() => {
+                    if (!mutation.data) return;
+                    sendMutation.mutate({
+                      workspaceId,
+                      subject: mutation.data.subject,
+                      html: mutation.data.html,
+                    });
+                  }}
+                >
+                  {sendMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+                  Send to Team
                 </Button>
               </DialogFooter>
             </div>
           ) : null}
         </DialogContent>
       </Dialog>
+      <style jsx global>{`
+        .digest-preview h1, .digest-preview h2 {
+          font-size: 16px;
+          font-weight: 600;
+          color: hsl(var(--primary));
+          margin: 16px 0 8px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid hsl(var(--border));
+        }
+        .digest-preview h3 {
+          font-size: 14px;
+          font-weight: 600;
+          color: hsl(var(--primary));
+          margin: 12px 0 6px;
+        }
+        .digest-preview p {
+          font-size: 14px;
+          color: hsl(var(--muted-foreground));
+          margin: 6px 0;
+          line-height: 1.6;
+        }
+        .digest-preview ul {
+          padding-left: 20px;
+          margin: 8px 0;
+        }
+        .digest-preview li {
+          font-size: 13px;
+          color: hsl(var(--foreground));
+          margin: 4px 0;
+        }
+        .digest-preview strong {
+          color: hsl(var(--foreground));
+          font-weight: 600;
+        }
+        .digest-preview .digest-stat {
+          font-size: 22px;
+          font-weight: 700;
+          color: hsl(var(--primary));
+        }
+        .digest-preview div[style] {
+          all: unset;
+        }
+        .digest-preview span {
+          color: hsl(var(--foreground));
+        }
+        .digest-preview hr {
+          border-color: hsl(var(--border));
+          margin: 12px 0;
+        }
+      `}</style>
     </>
   );
 }

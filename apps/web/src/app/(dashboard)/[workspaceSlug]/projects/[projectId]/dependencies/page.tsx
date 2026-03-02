@@ -316,19 +316,19 @@ export default function DependenciesPage() {
                   <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="cursor-pointer">
                     <rect
                       width={180} height={50} rx={8}
-                      fill="#0f172a"
+                      style={{ fill: "var(--color-card, var(--card))" }}
                       stroke={node.blocked ? "#ef4444" : node.onCriticalPath ? "#f59e0b" : colors.stroke}
                       strokeWidth={node.blocked ? 2.5 : node.onCriticalPath ? 2 : 1}
                     />
                     <rect width={4} height={50} rx={2} fill={colors.fill} />
-                    <text x={14} y={20} fontSize={11} fill="#e2e8f0" fontWeight={500}>
+                    <text x={14} y={20} fontSize={11} style={{ fill: "var(--color-card-foreground, var(--card-foreground))" }} fontWeight={500}>
                       {node.task.title?.slice(0, 22)}{(node.task.title?.length ?? 0) > 22 ? "…" : ""}
                     </text>
-                    <text x={14} y={36} fontSize={9} fill="#94a3b8">
+                    <text x={14} y={36} fontSize={9} style={{ fill: "var(--color-muted-foreground, var(--muted-foreground))" }}>
                       #{node.task.taskNumber} · {node.task.status?.replace("_", " ")}
                     </text>
                     {node.blocked && (
-                      <text x={165} y={18} fontSize={10} fill="#ef4444" textAnchor="end">🚫</text>
+                      <text x={165} y={18} fontSize={10} fill="#ef4444" textAnchor="end">⛔</text>
                     )}
                   </g>
                 );
