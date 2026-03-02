@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DKFlow — User Manual</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  @page { size: A4; margin: 20mm 18mm; }
+  @media print { 
+    .page-break { page-break-before: always; }
+    body { font-size: 11pt; }
+    .cover { page-break-after: always; }
+    .toc { page-break-after: always; }
+    h2 { page-break-before: always; }
+  }
+
+  body { font-family: 'Inter', -apple-system, sans-serif; color: #1e293b; line-height: 1.7; background: #fff; max-width: 210mm; margin: 0 auto; padding: 16px; }
+
+  /* Cover Page */
+  .cover { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 90vh; text-align: center; }
+  .cover-logo { font-size: 64px; font-weight: 800; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
+  .cover-subtitle { font-size: 28px; font-weight: 300; color: #64748b; margin-bottom: 40px; }
+  .cover-line { width: 120px; height: 4px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 2px; margin: 0 auto 40px; }
+  .cover-meta { font-size: 13px; color: #94a3b8; }
+  .cover-meta strong { color: #64748b; }
+
+  /* TOC */
+  .toc { padding: 40px 0; }
+  .toc h2 { font-size: 24px; font-weight: 700; margin-bottom: 24px; color: #1e293b; page-break-before: avoid; }
+  .toc-list { list-style: none; }
+  .toc-list li { padding: 8px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; }
+  .toc-list li a { text-decoration: none; color: #3b82f6; font-weight: 500; }
+  .toc-list li span { color: #94a3b8; font-size: 13px; }
+  .toc-section { font-weight: 700; font-size: 15px; color: #1e293b; margin-top: 16px; }
+
+  /* Section Headers */
+  h2 { font-size: 22px; font-weight: 700; color: #1e293b; margin: 48px 0 8px; padding-bottom: 8px; border-bottom: 3px solid; border-image: linear-gradient(90deg, #3b82f6, #8b5cf6) 1; }
+  h2 .section-num { color: #3b82f6; margin-right: 8px; }
+  h3 { font-size: 16px; font-weight: 600; color: #334155; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; color: #475569; margin: 16px 0 6px; }
+
+  p { margin: 8px 0; font-size: 13px; color: #475569; }
+
+  /* Info Blocks */
+  .block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 16px 0; }
+  .block-title { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .block-icon { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; flex-shrink: 0; }
+  .blue { background: #3b82f6; }
+  .violet { background: #8b5cf6; }
+  .green { background: #10b981; }
+  .orange { background: #f97316; }
+  .red { background: #ef4444; }
+  .cyan { background: #06b6d4; }
+  .amber { background: #f59e0b; }
+
+  ul, ol { margin: 8px 0 8px 20px; font-size: 13px; color: #475569; }
+  li { margin: 4px 0; }
+
+  .tip { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 12px; color: #1e40af; }
+  .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 12px; color: #92400e; }
+
+  .steps { counter-reset: step; list-style: none; margin-left: 0; }
+  .steps li { counter-increment: step; padding: 8px 0 8px 36px; position: relative; border-left: 2px solid #e2e8f0; margin-left: 12px; }
+  .steps li::before { content: counter(step); position: absolute; left: -13px; top: 6px; width: 24px; height: 24px; background: #3b82f6; color: #fff; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .steps li:last-child { border-left: 2px solid transparent; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+  th { background: #f1f5f9; padding: 8px 12px; text-align: left; font-weight: 600; color: #334155; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #475569; }
+  tr:hover td { background: #f8fafc; }
+
+  .role-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .role-owner { background: #dbeafe; color: #1d4ed8; }
+  .role-admin { background: #ede9fe; color: #6d28d9; }
+  .role-member { background: #d1fae5; color: #059669; }
+  .role-viewer { background: #fef3c7; color: #b45309; }
+  .role-guest { background: #f1f5f9; color: #64748b; }
+
+  .workflow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+  .workflow-step { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 500; }
+  .workflow-arrow { color: #94a3b8; font-size: 16px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  footer { text-align: center; padding: 40px 0 20px; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER PAGE ==================== -->
+<div class="cover">
+  <div class="cover-logo">DKFlow</div>
+  <div class="cover-subtitle">User Manual</div>
+  <div class="cover-line"></div>
+  <p style="font-size:16px; color:#64748b; max-width: 400px;">AI-Powered Project Management Platform</p>
+  <br><br>
+  <div class="cover-meta">
+    <strong>Version:</strong> 1.0 &nbsp;|&nbsp; <strong>Date:</strong> February 2026<br>
+    <strong>Website:</strong> dkflow.in<br><br>
+    Confidential — For Internal Use Only
+  </div>
+</div>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc page-break">
+  <h2 style="border:none; page-break-before:avoid;">Table of Contents</h2>
+  <ol class="toc-list">
+    <li class="toc-section">Getting Started</li>
+    <li><a href="#s1">1. Introduction & Overview</a></li>
+    <li><a href="#s2">2. Registration & Login</a></li>
+    <li><a href="#s3">3. Workspace Setup</a></li>
+    <li class="toc-section">Core Features</li>
+    <li><a href="#s4">4. Projects</a></li>
+    <li><a href="#s5">5. Task Management</a></li>
+    <li><a href="#s6">6. Views (Board, List, Table, Calendar, Timeline)</a></li>
+    <li><a href="#s7">7. Sprints & Agile</a></li>
+    <li><a href="#s8">8. Epics & Roadmap</a></li>
+    <li><a href="#s9">9. Dependencies</a></li>
+    <li class="toc-section">Collaboration</li>
+    <li><a href="#s10">10. Teams & Members</a></li>
+    <li><a href="#s11">11. Roles & Permissions (RBAC)</a></li>
+    <li><a href="#s12">12. Approvals</a></li>
+    <li><a href="#s13">13. Notifications</a></li>
+    <li class="toc-section">Advanced Features</li>
+    <li><a href="#s14">14. Documents Module</a></li>
+    <li><a href="#s15">15. AI Intelligence Engine</a></li>
+    <li><a href="#s16">16. Meetings & Transcripts</a></li>
+    <li><a href="#s17">17. Goals & OKRs</a></li>
+    <li><a href="#s18">18. Workload & Resource Planning</a></li>
+    <li><a href="#s19">19. Reports & Analytics</a></li>
+    <li><a href="#s20">20. Time Tracking</a></li>
+    <li class="toc-section">Administration</li>
+    <li><a href="#s21">21. Workspace Settings</a></li>
+    <li><a href="#s22">22. Subscription & Licensing</a></li>
+    <li><a href="#s23">23. Audit Log</a></li>
+    <li><a href="#s24">24. Admin Panel</a></li>
+  </ol>
+</div>
+
+<!-- ==================== SECTION 1 ==================== -->
+<h2 id="s1"><span class="section-num">1.</span> Introduction & Overview</h2>
+
+<p><strong>DKFlow</strong> is an AI-powered project management platform designed for teams of all sizes. It combines traditional project management with 18+ AI features to help teams plan, track, and deliver work more efficiently.</p>
+
+<div class="block">
+  <div class="block-title"><span class="block-icon blue">✦</span> Key Capabilities</div>
+  <div class="two-col">
+    <ul>
+      <li>Kanban Board, List, Table, Calendar views</li>
+      <li>Sprint planning & Agile workflows</li>
+      <li>Epics, Roadmap, Dependencies</li>
+      <li>Document version control</li>
+      <li>Goals & OKRs tracking</li>
+      <li>Time tracking & reports</li>
+    </ul>
+    <ul>
+      <li>AI task generation & estimation</li>
+      <li>AI meeting summarization</li>
+      <li>AI-powered search (Intelligence Engine)</li>
+      <li>Role-based access control (10 roles)</li>
+      <li>Team workload management</li>
+      <li>Custom forms & approvals</li>
+    </ul>
+  </div>
+</div>
+
+<h3>System Requirements</h3>
+<ul>
+  <li><strong>Browser:</strong> Chrome 90+, Firefox 88+, Safari 14+, Edge 90+</li>
+  <li><strong>Internet:</strong> Stable connection required</li>
+  <li><strong>Access:</strong> Visit <code>https://dkflow.in</code></li>
+</ul>
+
+<!-- ==================== SECTION 2 ==================== -->
+<h2 id="s2"><span class="section-num">2.</span> Registration & Login</h2>
+
+<h3>2.1 Creating an Account</h3>
+<ol class="steps">
+  <li>Navigate to <strong>dkflow.in</strong> and click <strong>"Get Started"</strong></li>
+  <li>Enter your <strong>Full Name</strong>, <strong>Email</strong>, and <strong>Password</strong> (min 8 characters)</li>
+  <li>Select your <strong>role</strong> (Project Manager, Developer, Designer, etc.)</li>
+  <li>Click <strong>"Create Account"</strong></li>
+  <li>Verify your email address via the confirmation link</li>
+</ol>
+
+<h3>2.2 Logging In</h3>
+<ol class="steps">
+  <li>Go to <strong>dkflow.in/login</strong></li>
+  <li>Enter your registered <strong>email</strong> and <strong>password</strong></li>
+  <li>Click <strong>"Sign In"</strong> — you'll be redirected to your Home dashboard</li>
+</ol>
+
+<div class="tip">💡 <strong>Tip:</strong> Use the "Remember me" option for faster login on trusted devices.</div>
+
+<!-- ==================== SECTION 3 ==================== -->
+<h2 id="s3"><span class="section-num">3.</span> Workspace Setup</h2>
+
+<p>A <strong>Workspace</strong> is the top-level container for your organization. All projects, teams, and members live inside a workspace.</p>
+
+<h3>3.1 Creating a Workspace</h3>
+<ol class="steps">
+  <li>After login, click <strong>"Create Workspace"</strong></li>
+  <li>Enter a <strong>Workspace Name</strong> (e.g., "Acme Corp")</li>
+  <li>Set a <strong>URL slug</strong> (e.g., acme-corp)</li>
+  <li>Choose workspace visibility: <strong>Private</strong> or <strong>Public</strong></li>
+  <li>Invite team members by email (optional — can be done later)</li>
+</ol>
+
+<h3>3.2 Workspace Structure</h3>
+<div class="block">
+  <div class="workflow">
+    <div class="workflow-step"><strong>Workspace</strong></div>
+    <span class="workflow-arrow">→</span>
+    <div class="workflow-step"><strong>Projects</strong></div>
+    <span class="workflow-arrow">→</span>
+    <div class="workflow-step"><strong>Tasks</strong></div>
+    <span class="workflow-arrow">→</span>
+    <div class="workflow-step"><strong>Subtasks</strong></div>
+  </div>
+  <p style="margin-top:8px;">Each workspace can contain unlimited projects. Each project contains tasks organized in sprints, epics, or backlogs.</p>
+</div>
+
+<!-- ==================== SECTION 4 ==================== -->
+<h2 id="s4"><span class="section-num">4.</span> Projects</h2>
+
+<h3>4.1 Creating a Project</h3>
+<ol class="steps">
+  <li>Click the <strong>"+"</strong> button in the sidebar or go to Portfolio → New Project</li>
+  <li>Enter <strong>Project Name</strong>, <strong>Key</strong> (e.g., DKF), and optional description</li>
+  <li>Choose a <strong>template</strong>: Blank, Scrum, Kanban, or Bug Tracking</li>
+  <li>Set <strong>Lead</strong>, <strong>Start Date</strong>, and <strong>Target Date</strong></li>
+  <li>Click <strong>"Create Project"</strong></li>
+</ol>
+
+<h3>4.2 Project Dashboard</h3>
+<p>Every project has a dedicated dashboard showing:</p>
+<ul>
+  <li><strong>Task Summary:</strong> Total, in progress, completed, overdue</li>
+  <li><strong>Sprint Progress:</strong> Current sprint burndown</li>
+  <li><strong>Team Activity:</strong> Recent changes and comments</li>
+  <li><strong>Priority Distribution:</strong> Visual breakdown of task priorities</li>
+</ul>
+
+<h3>4.3 Project Views (17 Views)</h3>
+<table>
+  <tr><th>View</th><th>Best For</th><th>Description</th></tr>
+  <tr><td><strong>Board</strong></td><td>Daily work</td><td>Kanban drag-and-drop columns</td></tr>
+  <tr><td><strong>List</strong></td><td>Quick overview</td><td>Simple flat task list</td></tr>
+  <tr><td><strong>Table</strong></td><td>Detailed editing</td><td>Spreadsheet-like inline editing</td></tr>
+  <tr><td><strong>Calendar</strong></td><td>Deadlines</td><td>Tasks on a calendar view</td></tr>
+  <tr><td><strong>Timeline</strong></td><td>Planning</td><td>Gantt chart with dependencies</td></tr>
+  <tr><td><strong>Roadmap</strong></td><td>Strategy</td><td>High-level feature planning</td></tr>
+  <tr><td><strong>Backlog</strong></td><td>Prioritization</td><td>Unassigned/future work</td></tr>
+  <tr><td><strong>Dashboard</strong></td><td>Reporting</td><td>Charts and analytics</td></tr>
+  <tr><td><strong>Sprints</strong></td><td>Agile teams</td><td>Sprint management</td></tr>
+  <tr><td><strong>Releases</strong></td><td>Versioning</td><td>Release tracking</td></tr>
+  <tr><td><strong>Dependencies</strong></td><td>Blockers</td><td>Task dependency graph</td></tr>
+  <tr><td><strong>Matrix</strong></td><td>Cross-reference</td><td>Priority vs status matrix</td></tr>
+  <tr><td><strong>Epics</strong></td><td>Large features</td><td>Epic-level tracking</td></tr>
+  <tr><td><strong>Time Report</strong></td><td>Hours tracking</td><td>Time logs per task/member</td></tr>
+  <tr><td><strong>Documents</strong></td><td>Files</td><td>Document management</td></tr>
+  <tr><td><strong>Forms</strong></td><td>Data collection</td><td>Custom form builder</td></tr>
+  <tr><td><strong>Engine</strong></td><td>AI insights</td><td>AI Intelligence Engine</td></tr>
+</table>
+
+<!-- ==================== SECTION 5 ==================== -->
+<h2 id="s5"><span class="section-num">5.</span> Task Management</h2>
+
+<h3>5.1 Creating a Task</h3>
+<ol class="steps">
+  <li>Open any project view (Board, List, etc.)</li>
+  <li>Click <strong>"+ New Task"</strong> or press <strong>N</strong> keyboard shortcut</li>
+  <li>Enter the <strong>Task Title</strong></li>
+  <li>Set optional fields: <strong>Assignee</strong>, <strong>Priority</strong>, <strong>Due Date</strong>, <strong>Labels</strong></li>
+  <li>Press <strong>Enter</strong> or click <strong>"Create"</strong></li>
+</ol>
+
+<h3>5.2 Task Properties</h3>
+<table>
+  <tr><th>Property</th><th>Options</th><th>Description</th></tr>
+  <tr><td>Status</td><td>Todo, In Progress, Review, Done</td><td>Current state of the task</td></tr>
+  <tr><td>Priority</td><td>None, Low, Medium, High, Urgent</td><td>Importance level</td></tr>
+  <tr><td>Assignee</td><td>Any project member</td><td>Who is responsible</td></tr>
+  <tr><td>Due Date</td><td>Any date</td><td>Deadline</td></tr>
+  <tr><td>Labels</td><td>Custom colored tags</td><td>Categorization</td></tr>
+  <tr><td>Sprint</td><td>Active/future sprints</td><td>Sprint assignment</td></tr>
+  <tr><td>Epic</td><td>Project epics</td><td>Parent epic</td></tr>
+  <tr><td>Story Points</td><td>1–21 (Fibonacci)</td><td>Effort estimation</td></tr>
+  <tr><td>Time Estimate</td><td>Hours</td><td>Planned hours</td></tr>
+</table>
+
+<h3>5.3 Task Detail View</h3>
+<p>Click any task to open its detail panel. Features include:</p>
+<ul>
+  <li><strong>Rich text description</strong> with markdown support</li>
+  <li><strong>Comments</strong> with @mentions</li>
+  <li><strong>Subtasks</strong> — break down work further</li>
+  <li><strong>Activity log</strong> — full change history</li>
+  <li><strong>Attachments</strong> — upload files</li>
+  <li><strong>Time logs</strong> — track time spent</li>
+  <li><strong>Dependencies</strong> — link blocking/blocked-by tasks</li>
+</ul>
+
+<div class="tip">💡 <strong>AI Feature:</strong> Click "AI Suggest" to get AI-generated subtasks, estimates, and descriptions based on the task title.</div>
+
+<!-- ==================== SECTION 6 ==================== -->
+<h2 id="s6"><span class="section-num">6.</span> Views — Board, List, Table, Calendar, Timeline</h2>
+
+<h3>6.1 Board View (Kanban)</h3>
+<p>The default view. Tasks appear as cards in columns representing statuses.</p>
+<ul>
+  <li><strong>Drag & drop</strong> cards between columns to change status</li>
+  <li><strong>Filter</strong> by assignee, priority, label, or sprint</li>
+  <li><strong>Group by</strong> status, assignee, priority, or label</li>
+  <li><strong>Quick edit</strong> — click card to open details</li>
+</ul>
+
+<h3>6.2 List View</h3>
+<p>Simple, scannable list of all tasks. Best for quick triaging.</p>
+
+<h3>6.3 Table View</h3>
+<p>Spreadsheet-style view with inline editing. Click any cell to edit directly. Supports sorting and column customization.</p>
+
+<h3>6.4 Calendar View</h3>
+<p>Tasks displayed on a monthly/weekly calendar based on due dates. Drag tasks to reschedule.</p>
+
+<h3>6.5 Timeline View (Gantt)</h3>
+<p>Horizontal bars showing task duration and dependencies. Perfect for project planning and identifying critical paths.</p>
+
+<!-- ==================== SECTION 7 ==================== -->
+<h2 id="s7"><span class="section-num">7.</span> Sprints & Agile</h2>
+
+<h3>7.1 Creating a Sprint</h3>
+<ol class="steps">
+  <li>Go to your project → <strong>Sprints</strong> tab</li>
+  <li>Click <strong>"New Sprint"</strong></li>
+  <li>Set <strong>Sprint Name</strong>, <strong>Start Date</strong>, <strong>End Date</strong> (typically 1–2 weeks)</li>
+  <li>Click <strong>"Create Sprint"</strong></li>
+</ol>
+
+<h3>7.2 Sprint Planning</h3>
+<ol class="steps">
+  <li>Open the <strong>Backlog</strong> view to see unassigned tasks</li>
+  <li>Drag tasks from Backlog into the active Sprint</li>
+  <li>Assign <strong>story points</strong> to estimate effort</li>
+  <li>Review sprint capacity vs. planned points</li>
+  <li>Click <strong>"Start Sprint"</strong> when ready</li>
+</ol>
+
+<h3>7.3 Sprint Charts</h3>
+<p>Each sprint includes:</p>
+<ul>
+  <li><strong>Burndown Chart:</strong> Track remaining work over time</li>
+  <li><strong>Velocity Chart:</strong> Compare story points completed across sprints</li>
+  <li><strong>Sprint Report:</strong> Summary of completed, incomplete, and added tasks</li>
+</ul>
+
+<!-- ==================== SECTION 8 ==================== -->
+<h2 id="s8"><span class="section-num">8.</span> Epics & Roadmap</h2>
+
+<h3>8.1 Epics</h3>
+<p>Epics are large features that span multiple sprints. Each epic contains multiple tasks.</p>
+<ol class="steps">
+  <li>Go to project → <strong>Epics</strong> tab</li>
+  <li>Click <strong>"New Epic"</strong></li>
+  <li>Set name, description, color, start/end dates</li>
+  <li>Assign tasks to the epic from the task detail view</li>
+</ol>
+
+<h3>8.2 Roadmap View</h3>
+<p>The Roadmap displays epics on a horizontal timeline. Use it to:</p>
+<ul>
+  <li>Visualize the product plan across quarters</li>
+  <li>Drag epics to adjust timing</li>
+  <li>Share with stakeholders for alignment</li>
+</ul>
+
+<!-- ==================== SECTION 9 ==================== -->
+<h2 id="s9"><span class="section-num">9.</span> Dependencies</h2>
+
+<p>Link tasks that depend on each other to prevent scheduling conflicts.</p>
+
+<h3>Dependency Types</h3>
+<table>
+  <tr><th>Type</th><th>Meaning</th></tr>
+  <tr><td><strong>Blocks</strong></td><td>This task must finish before the linked task can start</td></tr>
+  <tr><td><strong>Blocked by</strong></td><td>This task cannot start until the linked task finishes</td></tr>
+  <tr><td><strong>Related to</strong></td><td>Tasks are related but not blocking</td></tr>
+</table>
+
+<h3>Setting Dependencies</h3>
+<ol class="steps">
+  <li>Open a task detail view</li>
+  <li>Scroll to <strong>"Dependencies"</strong> section</li>
+  <li>Click <strong>"Add dependency"</strong></li>
+  <li>Search for the related task and select the dependency type</li>
+</ol>
+
+<p>The <strong>Dependencies</strong> tab shows a visual graph of all task relationships in the project.</p>
+
+<!-- ==================== SECTION 10 ==================== -->
+<h2 id="s10"><span class="section-num">10.</span> Teams & Members</h2>
+
+<h3>10.1 Inviting Members</h3>
+<ol class="steps">
+  <li>Go to <strong>Members</strong> in the sidebar</li>
+  <li>Click <strong>"Invite Members"</strong></li>
+  <li>Enter email addresses (comma-separated for multiple)</li>
+  <li>Select a <strong>role</strong> (Admin, Member, Guest)</li>
+  <li>Click <strong>"Send Invitations"</strong></li>
+</ol>
+
+<h3>10.2 Creating Teams</h3>
+<ol class="steps">
+  <li>Go to <strong>Teams</strong> in the sidebar</li>
+  <li>Click <strong>"Create Team"</strong></li>
+  <li>Name the team (e.g., "Backend Team", "Design")</li>
+  <li>Add members to the team</li>
+  <li>Assign the team to projects</li>
+</ol>
+
+<!-- ==================== SECTION 11 ==================== -->
+<h2 id="s11"><span class="section-num">11.</span> Roles & Permissions (RBAC)</h2>
+
+<p>DKFlow uses a comprehensive Role-Based Access Control system with separate workspace-level and project-level roles.</p>
+
+<h3>11.1 Workspace Roles</h3>
+<table>
+  <tr><th>Role</th><th>Access Level</th></tr>
+  <tr><td><span class="role-badge role-owner">Owner</span></td><td>Full control — billing, settings, member management, delete workspace</td></tr>
+  <tr><td><span class="role-badge role-admin">Admin</span></td><td>Manage members, projects, settings (cannot delete workspace or transfer ownership)</td></tr>
+  <tr><td><span class="role-badge role-member">Member</span></td><td>Create/edit tasks, join projects, view reports</td></tr>
+  <tr><td><span class="role-badge role-guest">Guest</span></td><td>Read-only access to assigned projects only</td></tr>
+</table>
+
+<h3>11.2 Project Roles</h3>
+<table>
+  <tr><th>Role</th><th>Access Level</th></tr>
+  <tr><td><span class="role-badge role-owner">Lead</span></td><td>Full project control — settings, sprints, releases, member management</td></tr>
+  <tr><td><span class="role-badge role-member">Member</span></td><td>Create/edit/delete tasks, log time, comment</td></tr>
+  <tr><td><span class="role-badge role-viewer">Viewer</span></td><td>View tasks and reports only — no editing</td></tr>
+</table>
+
+<h3>11.3 Permission Matrix</h3>
+<table>
+  <tr><th>Action</th><th>Owner</th><th>Admin</th><th>Member</th><th>Guest</th></tr>
+  <tr><td>Create projects</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+  <tr><td>Delete projects</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+  <tr><td>Manage members</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+  <tr><td>Create tasks</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+  <tr><td>Edit tasks</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+  <tr><td>View tasks</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Workspace settings</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+  <tr><td>Billing & subscription</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+  <tr><td>Audit log</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+</table>
+
+<!-- ==================== SECTION 12 ==================== -->
+<h2 id="s12"><span class="section-num">12.</span> Approvals</h2>
+
+<p>Request and manage approvals for tasks, documents, or decisions.</p>
+
+<ol class="steps">
+  <li>Go to <strong>Approvals</strong> in the sidebar</li>
+  <li>Click <strong>"New Approval"</strong></li>
+  <li>Enter the <strong>subject</strong> and <strong>description</strong></li>
+  <li>Select <strong>approver(s)</strong> from workspace members</li>
+  <li>Attach relevant tasks or documents</li>
+  <li>Submit — approvers receive notification</li>
+</ol>
+
+<div class="workflow">
+  <div class="workflow-step">Submitted</div>
+  <span class="workflow-arrow">→</span>
+  <div class="workflow-step">Pending Review</div>
+  <span class="workflow-arrow">→</span>
+  <div class="workflow-step" style="background:#d1fae5;border-color:#10b981;">Approved ✓</div>
+  <span style="color:#94a3b8;margin:0 4px;">or</span>
+  <div class="workflow-step" style="background:#fef2f2;border-color:#ef4444;">Rejected ✗</div>
+</div>
+
+<!-- ==================== SECTION 13 ==================== -->
+<h2 id="s13"><span class="section-num">13.</span> Notifications</h2>
+
+<p>Stay updated with real-time notifications for:</p>
+<ul>
+  <li>Task assignments and status changes</li>
+  <li>Comments and @mentions</li>
+  <li>Sprint starts/completions</li>
+  <li>Approval requests</li>
+  <li>Due date reminders</li>
+</ul>
+
+<h3>Notification Settings</h3>
+<p>Configure per-channel notifications in <strong>Workspace Settings → Integrations</strong>:</p>
+<ul>
+  <li><strong>In-app:</strong> Bell icon in top navigation (always on)</li>
+  <li><strong>Email:</strong> Toggle email digests (instant, daily, weekly)</li>
+  <li><strong>Slack/Teams:</strong> Add webhook URL for channel notifications</li>
+</ul>
+
+<!-- ==================== SECTION 14 ==================== -->
+<h2 id="s14"><span class="section-num">14.</span> Documents Module</h2>
+
+<p>Full document management with version control, categories, and AI features.</p>
+
+<h3>14.1 Uploading Documents</h3>
+<ol class="steps">
+  <li>Go to project → <strong>Documents</strong> tab</li>
+  <li>Click <strong>"Upload Document"</strong> or drag & drop files</li>
+  <li>Set <strong>title</strong>, <strong>category</strong>, and <strong>tags</strong></li>
+  <li>Optionally link to tasks</li>
+  <li>Click <strong>"Upload"</strong> (max 50MB per file)</li>
+</ol>
+
+<h3>14.2 Version Control</h3>
+<p>Upload new versions of existing documents. DKFlow tracks all versions with:</p>
+<ul>
+  <li>Version number (auto-incremented)</li>
+  <li>Upload date and uploader</li>
+  <li>Version notes/changelog</li>
+  <li>Ability to download any previous version</li>
+</ul>
+
+<h3>14.3 Organization</h3>
+<ul>
+  <li><strong>Categories:</strong> Create hierarchical categories/sub-categories</li>
+  <li><strong>Tags:</strong> Multi-tag system for flexible filtering</li>
+  <li><strong>Search:</strong> Full-text search across all documents</li>
+  <li><strong>Task linking:</strong> Bidirectional links between documents and tasks</li>
+</ul>
+
+<div class="tip">💡 <strong>AI Feature:</strong> Auto-tagging, AI-generated summaries, and semantic search coming in v2.</div>
+
+<!-- ==================== SECTION 15 ==================== -->
+<h2 id="s15"><span class="section-num">15.</span> AI Intelligence Engine</h2>
+
+<p>DKFlow's Intelligence Engine provides AI-powered insights across your projects.</p>
+
+<div class="block">
+  <div class="block-title"><span class="block-icon violet">🧠</span> AI Features (18 Total)</div>
+  <div class="two-col">
+    <div>
+      <h4>Task Intelligence</h4>
+      <ul>
+        <li>AI task generation from descriptions</li>
+        <li>Smart effort estimation</li>
+        <li>Priority suggestion</li>
+        <li>Subtask breakdown</li>
+        <li>Duplicate detection</li>
+      </ul>
+      <h4>Search & Discovery</h4>
+      <ul>
+        <li>Semantic search (natural language)</li>
+        <li>Pattern recognition</li>
+        <li>Ask Engine (RAG Q&A)</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Reporting</h4>
+      <ul>
+        <li>Daily briefing</li>
+        <li>Sprint health analysis</li>
+        <li>Risk detection</li>
+        <li>Velocity prediction</li>
+      </ul>
+      <h4>Meetings</h4>
+      <ul>
+        <li>Transcript summarization</li>
+        <li>Action item extraction</li>
+        <li>Auto task creation from meetings</li>
+      </ul>
+      <h4>Documents</h4>
+      <ul>
+        <li>Auto-tagging</li>
+        <li>Document summarization</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h3>15.1 Using the Engine</h3>
+<ol class="steps">
+  <li>Open any project → <strong>Engine</strong> tab</li>
+  <li>View the <strong>Daily Briefing</strong> for project highlights</li>
+  <li>Use <strong>"Ask Engine"</strong> to query your project data in natural language</li>
+  <li>Review <strong>AI Insights</strong> — patterns and recommendations</li>
+</ol>
+
+<div class="warning">⚠️ <strong>Note:</strong> The AI chatbot only answers project-management-related questions. General knowledge queries are blocked.</div>
+
+<!-- ==================== SECTION 16 ==================== -->
+<h2 id="s16"><span class="section-num">16.</span> Meetings & Transcripts</h2>
+
+<h3>16.1 Adding a Meeting</h3>
+<ol class="steps">
+  <li>Go to <strong>Meetings</strong> in the sidebar</li>
+  <li>Click <strong>"Add Manually"</strong> (or connect Microsoft Teams for auto-sync)</li>
+  <li>Enter <strong>meeting subject</strong> and <strong>attendees</strong></li>
+  <li>Paste the <strong>meeting transcript</strong> or notes</li>
+  <li>Click <strong>"Add Meeting"</strong></li>
+</ol>
+
+<h3>16.2 AI Processing</h3>
+<ol class="steps">
+  <li>Open the meeting and click <strong>"AI Process"</strong></li>
+  <li>AI generates: <strong>Summary</strong>, <strong>Key Decisions</strong>, <strong>Action Items</strong></li>
+  <li>Review the extracted action items (each has title, assignee, priority, due date)</li>
+  <li>Click <strong>"Create Tasks"</strong> to automatically create DKFlow tasks</li>
+</ol>
+
+<div class="workflow">
+  <div class="workflow-step">Paste Transcript</div>
+  <span class="workflow-arrow">→</span>
+  <div class="workflow-step">AI Process</div>
+  <span class="workflow-arrow">→</span>
+  <div class="workflow-step">Review Summary</div>
+  <span class="workflow-arrow">→</span>
+  <div class="workflow-step">Create Tasks</div>
+</div>
+
+<h3>16.3 Microsoft Teams Integration</h3>
+<p>Optionally connect your Microsoft Teams account to auto-sync meetings and transcripts. Requires organizational admin consent for transcript access.</p>
+
+<!-- ==================== SECTION 17 ==================== -->
+<h2 id="s17"><span class="section-num">17.</span> Goals & OKRs</h2>
+
+<h3>17.1 Creating a Goal</h3>
+<ol class="steps">
+  <li>Go to <strong>Goals</strong> in the sidebar</li>
+  <li>Click <strong>"New Goal"</strong></li>
+  <li>Enter <strong>Goal Title</strong> and <strong>Description</strong></li>
+  <li>Set <strong>Key Results</strong> (measurable outcomes)</li>
+  <li>Link related <strong>projects</strong> or <strong>tasks</strong></li>
+  <li>Set <strong>owner</strong> and <strong>time period</strong> (quarterly/annual)</li>
+</ol>
+
+<h3>17.2 Tracking Progress</h3>
+<p>Goals automatically track progress based on linked tasks and key results. Update key result values to reflect current progress. The goal percentage is auto-calculated.</p>
+
+<!-- ==================== SECTION 18 ==================== -->
+<h2 id="s18"><span class="section-num">18.</span> Workload & Resource Planning</h2>
+
+<h3>18.1 Workload View</h3>
+<p>Go to <strong>Workload</strong> in the sidebar to see each team member's task load displayed as a horizontal capacity bar chart.</p>
+<ul>
+  <li><strong>Green:</strong> Under capacity — available for more work</li>
+  <li><strong>Yellow:</strong> Near capacity — balanced</li>
+  <li><strong>Red:</strong> Over capacity — redistribute work</li>
+</ul>
+
+<h3>18.2 Resource Planning</h3>
+<p>The Resource Planning view shows team allocation across projects and time periods. Use it to:</p>
+<ul>
+  <li>Identify over/under-utilized team members</li>
+  <li>Plan resource allocation for upcoming sprints</li>
+  <li>Balance workload across the team</li>
+</ul>
+
+<!-- ==================== SECTION 19 ==================== -->
+<h2 id="s19"><span class="section-num">19.</span> Reports & Analytics</h2>
+
+<p>Go to <strong>Reports</strong> in the sidebar for workspace-wide analytics.</p>
+
+<h3>Available Reports</h3>
+<table>
+  <tr><th>Report</th><th>Shows</th></tr>
+  <tr><td><strong>Task Overview</strong></td><td>Total tasks by status, priority, assignee</td></tr>
+  <tr><td><strong>Sprint Report</strong></td><td>Completed vs planned per sprint</td></tr>
+  <tr><td><strong>Burndown</strong></td><td>Remaining work over sprint duration</td></tr>
+  <tr><td><strong>Velocity</strong></td><td>Story points completed per sprint (trend)</td></tr>
+  <tr><td><strong>Time Report</strong></td><td>Hours logged per member/project</td></tr>
+  <tr><td><strong>Workload</strong></td><td>Tasks per team member</td></tr>
+  <tr><td><strong>Activity</strong></td><td>Change log and team activity feed</td></tr>
+</table>
+
+<!-- ==================== SECTION 20 ==================== -->
+<h2 id="s20"><span class="section-num">20.</span> Time Tracking</h2>
+
+<h3>20.1 Logging Time</h3>
+<ol class="steps">
+  <li>Open a task detail view</li>
+  <li>Click <strong>"Log Time"</strong> or the timer icon</li>
+  <li>Enter <strong>hours</strong> and optional <strong>description</strong></li>
+  <li>Click <strong>"Save"</strong></li>
+</ol>
+
+<h3>20.2 Time Reports</h3>
+<p>Go to project → <strong>Time Report</strong> tab to see:</p>
+<ul>
+  <li>Total hours logged per task and member</li>
+  <li>Estimated vs actual hours comparison</li>
+  <li>Weekly/monthly breakdown</li>
+  <li>Export to CSV</li>
+</ul>
+
+<!-- ==================== SECTION 21 ==================== -->
+<h2 id="s21"><span class="section-num">21.</span> Workspace Settings</h2>
+
+<p>Accessible to <strong>Owners</strong> and <strong>Admins</strong> only.</p>
+
+<h3>Settings Sections</h3>
+<table>
+  <tr><th>Section</th><th>What You Can Configure</th></tr>
+  <tr><td><strong>General</strong></td><td>Workspace name, URL, logo, description</td></tr>
+  <tr><td><strong>Members</strong></td><td>Invite, remove, change roles</td></tr>
+  <tr><td><strong>Labels</strong></td><td>Create/edit workspace-wide labels with colors</td></tr>
+  <tr><td><strong>Statuses</strong></td><td>Customize task statuses and workflow columns</td></tr>
+  <tr><td><strong>Integrations</strong></td><td>Slack/Teams webhooks, email settings</td></tr>
+  <tr><td><strong>Notifications</strong></td><td>Configure notification channels and frequency</td></tr>
+  <tr><td><strong>Custom Fields</strong></td><td>Add custom task properties</td></tr>
+</table>
+
+<!-- ==================== SECTION 22 ==================== -->
+<h2 id="s22"><span class="section-num">22.</span> Subscription & Licensing</h2>
+
+<h3>Plans</h3>
+<table>
+  <tr><th>Feature</th><th>Free</th><th>Pro</th></tr>
+  <tr><td>Projects</td><td>3</td><td>Unlimited</td></tr>
+  <tr><td>Members</td><td>5</td><td>Unlimited</td></tr>
+  <tr><td>Storage</td><td>500MB</td><td>50GB</td></tr>
+  <tr><td>AI Features</td><td>Limited</td><td>Full (18 features)</td></tr>
+  <tr><td>Sprints</td><td>✅</td><td>✅</td></tr>
+  <tr><td>Custom Roles</td><td>❌</td><td>✅</td></tr>
+  <tr><td>Audit Log</td><td>❌</td><td>✅</td></tr>
+  <tr><td>Priority Support</td><td>❌</td><td>✅</td></tr>
+</table>
+
+<h3>Activating a License</h3>
+<ol class="steps">
+  <li>Go to <strong>Workspace Settings → Subscription</strong></li>
+  <li>Click <strong>"Upgrade to Pro"</strong></li>
+  <li>Enter your <strong>License Key</strong></li>
+  <li>Click <strong>"Activate"</strong></li>
+</ol>
+
+<!-- ==================== SECTION 23 ==================== -->
+<h2 id="s23"><span class="section-num">23.</span> Audit Log</h2>
+
+<p>The Audit Log tracks all important actions in your workspace for security and compliance.</p>
+
+<h3>What's Tracked</h3>
+<ul>
+  <li>Member additions and removals</li>
+  <li>Role changes</li>
+  <li>Project creation and deletion</li>
+  <li>Settings changes</li>
+  <li>Login activity</li>
+</ul>
+
+<p>Access: <strong>Sidebar → Audit Log</strong> (Owners and Admins only)</p>
+
+<!-- ==================== SECTION 24 ==================== -->
+<h2 id="s24"><span class="section-num">24.</span> Admin Panel</h2>
+
+<p>The standalone Admin Panel (port 8443) provides super-admin controls:</p>
+
+<ul>
+  <li><strong>Users:</strong> View all registered users, activate/deactivate accounts</li>
+  <li><strong>Workspaces:</strong> Manage all workspaces, view usage statistics</li>
+  <li><strong>Licenses:</strong> Generate, activate, and manage Pro license keys</li>
+  <li><strong>System Health:</strong> API status, database connections, uptime</li>
+</ul>
+
+<div class="warning">⚠️ <strong>Admin Panel is separate</strong> from the main DKFlow app. Access it at <code>https://dkflow.in:8443</code> with admin credentials.</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+  <p><strong>DKFlow</strong> — AI-Powered Project Management</p>
+  <p>© 2026 DKFlow. All rights reserved.</p>
+  <p style="margin-top:8px;">For support, contact: dkflow4@gmail.com</p>
+</footer>
+
+</body>
+</html>
