@@ -1,4 +1,4 @@
-# DKFlow — install API and Web as Windows Services via NSSM.
+# DKFlow -- install API and Web as Windows Services via NSSM.
 # Must be run as Administrator.
 #
 # Usage (from C:\dkflow):

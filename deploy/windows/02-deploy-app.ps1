@@ -1,4 +1,4 @@
-# DKFlow — Windows deploy script
+# DKFlow -- Windows deploy script
 # Runs install + Prisma + seed + web build. Idempotent: safe to re-run.
 #
 # Usage (from C:\dkflow):
@@ -72,7 +72,7 @@ if (-not $SkipSeed) {
     Push-Location ".\apps\api"
     try { pnpm exec tsx prisma\seed.ts } finally { Pop-Location }
 } else {
-    Write-Host "  (skipped — -SkipSeed)" -ForegroundColor Yellow
+    Write-Host "  (skipped -- -SkipSeed)" -ForegroundColor Yellow
 }
 
 # --- Web build ---------------------------------------------------
@@ -80,7 +80,7 @@ if (-not $SkipBuild) {
     Step "Web build"
     pnpm --filter "@dkflow/web" build
 } else {
-    Write-Host "  (skipped — -SkipBuild)" -ForegroundColor Yellow
+    Write-Host "  (skipped -- -SkipBuild)" -ForegroundColor Yellow
 }
 
 Step "Done"
