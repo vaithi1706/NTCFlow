@@ -11,14 +11,27 @@ Assumes:
 
 ---
 
+## Fast path — one command
+
+Once the runtimes are installed (Step 1 below), run as **Administrator**:
+
+```powershell
+cd C:\Users\Administrator\Documents\GitHub\NTCFlow   # or wherever you cloned it
+.\deploy\windows\setup-all.ps1
+```
+
+That single script does Steps 2–5: creates the DB, generates the `.env` (with auto-generated JWT_SECRET), installs deps, runs Prisma, seeds, builds, and installs the Windows Services. Step 6 (IIS) is still manual.
+
 ## Order of operations
 
 | # | Step | File |
 |---|---|---|
 | 1 | Install runtimes (Postgres, Memurai, Node 22 LTS, pnpm, Git, NSSM) | — |
+| 2–5 | **One-shot setup** (DB + env + deps + Prisma + seed + build + services) | [`setup-all.ps1`](setup-all.ps1) |
+| | — or do the substeps manually: | |
 | 2 | Create the DB, user, extension | [`01-setup-db.sql`](01-setup-db.sql) |
-| 3 | Clone repo + install deps + seed (one-shot script) | [`02-deploy-app.ps1`](02-deploy-app.ps1) |
-| 4 | Write the `.env` files (template provided) | [`api.env.example`](api.env.example), [`web.env.production.local.example`](web.env.production.local.example) |
+| 3 | Write the `.env` files | [`api.env.example`](api.env.example), [`web.env.production.local.example`](web.env.production.local.example) |
+| 4 | Install deps, run Prisma, build | [`02-deploy-app.ps1`](02-deploy-app.ps1) |
 | 5 | Install API + Web as Windows Services | [`03-install-services.ps1`](03-install-services.ps1) |
 | 6 | Configure IIS reverse proxy with WebSocket support | [`iis-web.config`](iis-web.config) |
 | 7 | (Optional) Generate a Pro license key | [`generate-license-key.ps1`](generate-license-key.ps1) |

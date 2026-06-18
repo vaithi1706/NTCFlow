@@ -41,8 +41,16 @@ if ($nodeMajor -lt 22) {
     exit 1
 }
 
-# Make the uploads dir before the API tries to mkdir it on startup.
-$uploadDir = "C:\dkflow\uploads"
+# Uploads dir: derive from .env's UPLOAD_DIR if set, else default to <repoRoot>\uploads.
+# The API will also mkdir on startup, but creating it here means it exists with
+# the right owner (the deploy user) before any service starts writing to it.
+$uploadDir = $null
+$envFile = ".\apps\api\.env"
+if (Test-Path $envFile) {
+    $match = Select-String -Path $envFile -Pattern '^\s*UPLOAD_DIR\s*=\s*(.+)$' -ErrorAction SilentlyContinue
+    if ($match) { $uploadDir = $match.Matches[0].Groups[1].Value.Trim() }
+}
+if (-not $uploadDir) { $uploadDir = Join-Path $repoRoot "uploads" }
 if (-not (Test-Path $uploadDir)) { New-Item -ItemType Directory -Path $uploadDir -Force | Out-Null }
 
 # Logs dir for NSSM.

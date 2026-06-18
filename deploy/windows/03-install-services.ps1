@@ -7,7 +7,9 @@
 
 param(
     [switch]$Reinstall,
-    [string]$AppRoot = "C:\dkflow"
+    # Default to the repo root derived from this script's location, so the
+    # script works from any clone path (e.g. C:\Users\Administrator\Documents\GitHub\NTCFlow).
+    [string]$AppRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
 )
 
 $ErrorActionPreference = "Stop"
