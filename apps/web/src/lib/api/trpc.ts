@@ -15,7 +15,7 @@ async function refreshAccessToken(): Promise<boolean> {
   if (!refreshToken) return false;
 
   try {
-    const res = await fetch("/api/trpc/auth.refreshToken", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/trpc/auth.refreshToken`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ json: { refreshToken } }),
@@ -52,10 +52,13 @@ function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Browser: NEXT_PUBLIC_API_URL bypasses the Next dev proxy (which has a 30s
+// timeout that some AI calls exceed). In prod it's unset → relative URLs → nginx.
+// SSR: always direct to the API server.
 const API_URL =
   typeof window !== "undefined"
-    ? "" // Browser: use relative URLs through nginx
-    : "http://127.0.0.1:4000"; // SSR: direct to API server
+    ? (process.env.NEXT_PUBLIC_API_URL || "")
+    : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4001");
 
 function createBatchLink() {
   return httpBatchLink({

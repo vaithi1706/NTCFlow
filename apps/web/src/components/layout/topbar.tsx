@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { Bell, Filter, Search, LayoutGrid, List, Table, CalendarDays, GanttChart, BarChart3, Zap, Map, Layers, Package, FileText, GitBranch, Grid3X3, Milestone, Brain, FolderOpen } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
@@ -159,14 +159,16 @@ export function TopBar({
       <Breadcrumb>
         <BreadcrumbList>
           {breadcrumbs.map((bc, i) => (
-            <BreadcrumbItem key={i}>
+            <Fragment key={i}>
               {i > 0 && <BreadcrumbSeparator />}
-              {bc.href ? (
-                <BreadcrumbLink asChild><Link href={bc.href}>{bc.label}</Link></BreadcrumbLink>
-              ) : (
-                <span className="text-foreground font-medium">{bc.label}</span>
-              )}
-            </BreadcrumbItem>
+              <BreadcrumbItem>
+                {bc.href ? (
+                  <BreadcrumbLink asChild><Link href={bc.href}>{bc.label}</Link></BreadcrumbLink>
+                ) : (
+                  <span className="text-foreground font-medium">{bc.label}</span>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
           ))}
         </BreadcrumbList>
       </Breadcrumb>

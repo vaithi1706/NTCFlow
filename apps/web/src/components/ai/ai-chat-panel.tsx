@@ -300,11 +300,14 @@ export function AiChatPanel({ projectId, workspaceId }: { projectId?: string; wo
                         {group.label}
                       </div>
                       {group.sessions.map(session => (
-                        <button
+                        <div
                           key={session.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => handleSelectSession(session)}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelectSession(session); } }}
                           className={cn(
-                            "group w-full flex items-center justify-between px-2 py-1.5 text-left text-xs rounded-md transition-colors",
+                            "group w-full flex items-center justify-between px-2 py-1.5 text-left text-xs rounded-md transition-colors cursor-pointer",
                             activeSessionId === session.id
                               ? "bg-violet-600/20 text-violet-300"
                               : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -317,7 +320,7 @@ export function AiChatPanel({ projectId, workspaceId }: { projectId?: string; wo
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   ))}

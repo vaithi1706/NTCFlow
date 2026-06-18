@@ -12,10 +12,10 @@ import { logger } from "../utils/logger.js";
 
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 const NVIDIA_LLM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-const NVIDIA_LLM_MODEL = "meta/llama-3.3-70b-instruct";
+const NVIDIA_LLM_MODEL = "openai/gpt-oss-120b";
 const NVIDIA_EMBED_URL = "https://integrate.api.nvidia.com/v1/embeddings";
 const NVIDIA_EMBED_MODEL = "nvidia/nv-embedqa-e5-v5";
-const UPLOADS_DIR = "/home/ubuntu/dkflow/uploads";
+const UPLOADS_DIR = process.env.UPLOAD_DIR || "/home/ubuntu/dkflow/uploads";
 
 // ─── Text Extraction ────────────────────────────────────────────────
 

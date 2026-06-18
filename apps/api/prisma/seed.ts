@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 const prisma = new PrismaClient();
 
 // Bcrypt hash for "Password1!" (12 rounds)
-const PASSWORD_HASH = '$2b$12$LJ3m4ys3GZzKvMqZcQv2aeZJGzGCb3GJj2qYx5Y7LqNKqXhKTmXYC';
+const PASSWORD_HASH = '$2a$12$TrZMakQUBdgexUKCpBgLAutuzK0KisiMGJ5CNudIjXgK1hDeWO7V2';
 
 async function main() {
   console.log('🌱 Seeding DKFlow database...\n');

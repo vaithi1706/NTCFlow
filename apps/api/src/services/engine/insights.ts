@@ -10,7 +10,7 @@ import { getPatterns } from "./patterns.js";
 import { semanticSearch } from "./embeddings.js";
 
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
-const NVIDIA_MODEL = "meta/llama-3.3-70b-instruct";
+const NVIDIA_MODEL = "openai/gpt-oss-120b";
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
 async function callAI(systemPrompt: string, userMessage: string, maxTokens = 2000): Promise<string> {

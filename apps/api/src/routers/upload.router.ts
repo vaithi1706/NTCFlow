@@ -21,7 +21,7 @@ export const uploadRouter = router({
       const attachment = await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: input.id } });
       if (attachment.uploadedById !== ctx.user.userId) throw new TRPCError({ code: "FORBIDDEN" });
 
-      const filePath = path.join("/home/ubuntu/dkflow/uploads", path.basename(attachment.fileUrl));
+      const filePath = path.join(process.env.UPLOAD_DIR || "/home/ubuntu/dkflow/uploads", path.basename(attachment.fileUrl));
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
       await ctx.prisma.attachment.delete({ where: { id: input.id } });

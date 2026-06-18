@@ -1126,7 +1126,7 @@ export const aiRouter = router({
       // Resolve file path
       let filePath = input.fileUrl;
       if (filePath.startsWith("/uploads/")) {
-        filePath = path.join("/home/ubuntu/dkflow/uploads", filePath.replace("/uploads/", ""));
+        filePath = path.join(process.env.UPLOAD_DIR || "/home/ubuntu/dkflow/uploads", filePath.replace("/uploads/", ""));
       }
       if (!fs.existsSync(filePath)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "File not found" });

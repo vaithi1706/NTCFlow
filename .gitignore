@@ -3,7 +3,9 @@ node_modules/
 dist/
 .env
 .env.local
+.env.production.local
 *.log
 .turbo/
 coverage/
 uploads/
+dump.rdb

@@ -52,7 +52,7 @@ app.get("/api/health", async (_req, res) => {
 });
 
 // File uploads
-const uploadsDir = "/home/ubuntu/dkflow/uploads";
+const uploadsDir = path.resolve(process.env.UPLOAD_DIR || "/home/ubuntu/dkflow/uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -62,7 +62,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } });
 
 // Document uploads (separate storage for version control)
-const docUploadsDir2 = "/home/ubuntu/dkflow/uploads/documents";
+const docUploadsDir2 = path.join(uploadsDir, "documents");
 if (!fs.existsSync(docUploadsDir2)) fs.mkdirSync(docUploadsDir2, { recursive: true });
 const docStorage2 = multer.diskStorage({
   destination: (_req: any, _file: any, cb: any) => cb(null, docUploadsDir2),

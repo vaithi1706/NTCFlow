@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -342,6 +342,8 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
   return (
     <Sheet open={!!task} onOpenChange={() => onClose()}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0">
+        <SheetTitle className="sr-only">{task.title || `Task DK-${task.taskNumber}`}</SheetTitle>
+        <SheetDescription className="sr-only">Task details for DK-{task.taskNumber}</SheetDescription>
         {/* Header */}
         <div className="p-6 pb-0">
           <div className="flex items-start justify-between gap-3 mb-4">

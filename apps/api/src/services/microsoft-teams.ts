@@ -279,7 +279,7 @@ async function callLLM(systemPrompt: string, userMessage: string): Promise<strin
       Authorization: `Bearer ${NVIDIA_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "meta/llama-3.3-70b-instruct",
+      model: "openai/gpt-oss-120b",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
