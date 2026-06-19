@@ -1134,7 +1134,7 @@ function AttachmentsSection({ taskId }: { taskId: string }) {
         formData.append("file", files[i]);
         formData.append("taskId", taskId);
         const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-        await fetch("/api/upload", {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/upload`, {
           method: "POST",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData,

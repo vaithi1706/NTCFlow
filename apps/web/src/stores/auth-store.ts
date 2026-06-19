@@ -34,7 +34,7 @@ async function silentRefresh() {
   if (!refreshToken) return;
 
   try {
-    const res = await fetch("/api/trpc/auth.refreshToken", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/trpc/auth.refreshToken`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ json: { refreshToken } }),
@@ -111,7 +111,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Revoke refresh token on server (best-effort)
     const rt = localStorage.getItem("refreshToken");
     if (rt) {
-      fetch("/api/trpc/auth.logout", {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/trpc/auth.logout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ json: { refreshToken: rt } }),

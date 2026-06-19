@@ -95,7 +95,7 @@ export function AiExcelImport({ projectId, onComplete }: AiExcelImportProps) {
       const formData = new FormData();
       formData.append("file", file);
       const token = localStorage.getItem("accessToken");
-      const res = await fetch("/api/upload", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/upload`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
