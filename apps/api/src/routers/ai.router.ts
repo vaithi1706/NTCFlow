@@ -794,11 +794,16 @@ export const aiRouter = router({
           data: { sessionId, role: "assistant", content: result.response, actions: actionsExecuted.length > 0 ? actionsExecuted : undefined },
         });
 
-        // Auto-title new sessions
+        // Auto-title new sessions. Fire-and-forget but MUST have a terminal
+        // .catch() -- if generateSessionTitle() rejects (e.g. the NVIDIA API
+        // times out or returns an error), an uncaught promise rejection
+        // crashes the entire Node process, killing every active connection
+        // for every user. Failing silently is the right behavior for a
+        // best-effort cosmetic title.
         if (isNewSession) {
-          generateSessionTitle(input.message).then(title => {
-            ctx.prisma.aiChatSession.update({ where: { id: sessionId }, data: { title } }).catch(() => {});
-          });
+          generateSessionTitle(input.message)
+            .then(title => ctx.prisma.aiChatSession.update({ where: { id: sessionId }, data: { title } }))
+            .catch(() => { /* title generation failed -- not worth crashing for */ });
         }
 
         // Update session timestamp
