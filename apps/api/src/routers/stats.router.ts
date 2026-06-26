@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc.js";
-import { requirePermission, getWorkspaceIdFromProject , requireProjectAccess, getAccessibleProjectIds } from "../middleware/permissions.js";
+import { requirePermission, getWorkspaceIdFromProject , requireProjectAccess, getAccessibleProjectIds, checkPermission } from "../middleware/permissions.js";
 
 export const statsRouter = router({
   workspaceOverview: protectedProcedure
@@ -47,6 +48,86 @@ export const statsRouter = router({
       // assigned to you") -- same value as totalTasks now that totals are
       // personal.
       return { totalTasks, completedThisWeek, completedToday, overdueTasks, activeSprints, myTasks: totalTasks };
+    }),
+
+  /**
+   * Per-member drill-down: every task assigned to a given user inside a
+   * workspace, split into Open / Completed-in-range / Overdue buckets.
+   * Powers the /profile/[userId] activity panel and the (planned) per-person
+   * Reports view.
+   *
+   * Permission model: the caller can see this if they ARE the target user,
+   * or if they have `canViewReports` in the workspace (Owner/Admin/PM/
+   * Scrum/PO/BA per default-roles).
+   */
+  memberActivity: protectedProcedure
+    .input(z.object({
+      workspaceId: z.string().uuid(),
+      userId: z.string().uuid(),
+      dateRange: z.enum(["last_7_days", "last_30_days", "last_90_days"]).default("last_30_days"),
+    }))
+    .query(async ({ ctx, input }) => {
+      const callerId = ctx.user.userId;
+      if (callerId !== input.userId) {
+        const ok = await checkPermission(ctx.prisma, callerId, input.workspaceId, "canViewReports");
+        if (!ok) throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed to view this member's activity" });
+      }
+
+      const now = new Date();
+      const days = input.dateRange === "last_7_days" ? 7 : input.dateRange === "last_90_days" ? 90 : 30;
+      const from = new Date(now);
+      from.setDate(now.getDate() - days);
+
+      const baseWhere = {
+        project: { workspaceId: input.workspaceId, deletedAt: null },
+        deletedAt: null,
+        assignees: { some: { userId: input.userId } },
+      };
+
+      const taskSelect = {
+        id: true,
+        taskNumber: true,
+        title: true,
+        status: true,
+        priority: true,
+        dueDate: true,
+        completedAt: true,
+        updatedAt: true,
+        project: { select: { id: true, name: true, color: true, slug: true } },
+      } as const;
+
+      const [openTasks, completedTasks, overdueTasks] = await Promise.all([
+        ctx.prisma.task.findMany({
+          where: { ...baseWhere, status: { notIn: ["done", "cancelled"] } },
+          select: taskSelect,
+          orderBy: { updatedAt: "desc" },
+          take: 100,
+        }),
+        ctx.prisma.task.findMany({
+          where: { ...baseWhere, status: "done", completedAt: { gte: from, lte: now } },
+          select: taskSelect,
+          orderBy: { completedAt: "desc" },
+          take: 100,
+        }),
+        ctx.prisma.task.findMany({
+          where: { ...baseWhere, dueDate: { lt: now }, status: { notIn: ["done", "cancelled"] } },
+          select: taskSelect,
+          orderBy: { dueDate: "asc" },
+          take: 100,
+        }),
+      ]);
+
+      return {
+        dateRange: { from: from.toISOString(), to: now.toISOString(), days },
+        counts: {
+          open: openTasks.length,
+          completed: completedTasks.length,
+          overdue: overdueTasks.length,
+        },
+        openTasks,
+        completedTasks,
+        overdueTasks,
+      };
     }),
 
   projectOverview: protectedProcedure

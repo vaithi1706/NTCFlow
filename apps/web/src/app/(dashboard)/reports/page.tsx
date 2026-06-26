@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { trpc } from "@/lib/api/trpc";
 import { useAuthStore } from "@/stores/auth-store";
 import { TopBar } from "@/components/layout/topbar";
@@ -9,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BarChart3, PieChart, TrendingUp, Users, Clock, AlertTriangle,
-  Zap, Download, FileSpreadsheet, Target,
+  Zap, Download, FileSpreadsheet, Target, ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -229,8 +230,13 @@ function ReportView({ report }: { report: any }) {
             </thead>
             <tbody>
               {report.data.members?.map((m: any) => (
-                <tr key={m.user.id} className="border-b border-border last:border-0 hover:bg-muted/30">
-                  <td className="p-3 font-medium text-foreground">{m.user.name}</td>
+                <tr key={m.user.id} className="border-b border-border last:border-0 hover:bg-muted/30 group">
+                  <td className="p-3 font-medium text-foreground">
+                    <Link href={`/profile/${m.user.id}`} className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                      {m.user.name}
+                      <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  </td>
                   <td className="p-3 text-center text-muted-foreground">{m.assigned}</td>
                   <td className="p-3 text-center text-green-500 font-medium">{m.completed}</td>
                   <td className="p-3 text-center text-red-500 font-medium">{m.overdue}</td>
