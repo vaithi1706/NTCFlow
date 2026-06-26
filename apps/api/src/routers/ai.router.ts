@@ -36,7 +36,7 @@ import {
   suggestTemplates,
   extractFromTranscript,
 } from "../services/ai.js";
-import { requireProjectAccess, getWorkspaceIdFromProject } from "../middleware/permissions.js";
+import { requireProjectAccess, getWorkspaceIdFromProject, getAccessibleProjectIds } from "../middleware/permissions.js";
 import { requireFeature } from "../middleware/subscription.js";
 import { logAudit } from "../utils/audit.js";
 
@@ -1343,15 +1343,18 @@ export const aiRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireFeature(input.workspaceId, "ai");
 
+      // Scope autocomplete + search to projects the caller can access.
+      const { projectIds: accessibleProjectIds } = await getAccessibleProjectIds(ctx.prisma, ctx.user.userId, input.workspaceId);
+
       const [members, projects, labels] = await Promise.all([
         ctx.prisma.projectMember.findMany({
-          where: { project: { workspaceId: input.workspaceId } },
+          where: { projectId: { in: accessibleProjectIds } },
           include: { user: { select: { id: true, name: true } } },
           distinct: ["userId"],
         }),
-        ctx.prisma.project.findMany({ where: { workspaceId: input.workspaceId, deletedAt: null }, select: { id: true, name: true } }),
+        ctx.prisma.project.findMany({ where: { id: { in: accessibleProjectIds }, deletedAt: null }, select: { id: true, name: true } }),
         ctx.prisma.label.findMany({
-          where: { project: { workspaceId: input.workspaceId } },
+          where: { projectId: { in: accessibleProjectIds } },
           select: { name: true },
           distinct: ["name"],
         }),
@@ -1363,8 +1366,8 @@ export const aiRouter = router({
         projects: projects.map(p => ({ id: p.id, name: p.name })),
       });
 
-      // Execute the search with resolved filters
-      const where: any = { project: { workspaceId: input.workspaceId, deletedAt: null }, deletedAt: null };
+      // Execute the search with resolved filters — restricted to accessible projects.
+      const where: any = { projectId: { in: accessibleProjectIds }, deletedAt: null };
       const f = result.filters;
       if (f.status?.length) where.status = { in: f.status };
       if (f.priority?.length) where.priority = { in: f.priority };
@@ -1702,8 +1705,10 @@ export const aiRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireFeature(input.workspaceId, "ai");
 
+      // Project Health Dashboard is scoped to the caller's accessible projects.
+      const { projectIds: accessibleProjectIds } = await getAccessibleProjectIds(ctx.prisma, ctx.user.userId, input.workspaceId);
       const projects = await ctx.prisma.project.findMany({
-        where: { workspaceId: input.workspaceId, deletedAt: null },
+        where: { id: { in: accessibleProjectIds }, deletedAt: null },
         select: { id: true, name: true },
       });
 

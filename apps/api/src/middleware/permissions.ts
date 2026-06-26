@@ -187,6 +187,64 @@ export async function hasProjectAccess(
 }
 
 /**
+ * Returns the set of project IDs a user can access within a workspace.
+ *
+ * Rules (mirrors project.list, activity.getWorkspaceActivity, search.global):
+ *   - Workspace owners/admins (legacy roles "owner"/"admin", or custom roles named
+ *     "Owner"/"Admin") see ALL non-deleted projects in the workspace.
+ *   - Everyone else sees only projects where they are: (a) a direct ProjectMember,
+ *     (b) a member via a Team assigned to the project, or (c) the project owner.
+ *   - Non-workspace-members get an empty list.
+ *
+ * Use this in any dashboard/widget/aggregate endpoint that scopes data to
+ * "the user's projects in this workspace" instead of fetching all workspace
+ * projects unconditionally.
+ */
+export async function getAccessibleProjectIds(
+  prisma: PrismaClient,
+  userId: string,
+  workspaceId: string
+): Promise<{ projectIds: string[]; isOwnerOrAdmin: boolean; isMember: boolean }> {
+  const member = await getWorkspaceMemberWithRole(prisma, userId, workspaceId);
+  if (!member) return { projectIds: [], isOwnerOrAdmin: false, isMember: false };
+
+  const isOwnerOrAdmin =
+    member.role === "owner" || member.role === "admin" ||
+    !!(member.customRole && (member.customRole.name === "Owner" || member.customRole.name === "Admin"));
+
+  if (isOwnerOrAdmin) {
+    const all = await prisma.project.findMany({
+      where: { workspaceId, deletedAt: null },
+      select: { id: true },
+    });
+    return { projectIds: all.map(p => p.id), isOwnerOrAdmin: true, isMember: true };
+  }
+
+  const [direct, teamBased, owned] = await Promise.all([
+    prisma.projectMember.findMany({
+      where: { userId, project: { workspaceId, deletedAt: null } },
+      select: { projectId: true },
+    }),
+    prisma.projectTeam.findMany({
+      where: { project: { workspaceId, deletedAt: null }, team: { members: { some: { userId } } } },
+      select: { projectId: true },
+    }),
+    prisma.project.findMany({
+      where: { ownerId: userId, workspaceId, deletedAt: null },
+      select: { id: true },
+    }),
+  ]);
+
+  const projectIds = [...new Set([
+    ...direct.map(m => m.projectId),
+    ...teamBased.map(t => t.projectId),
+    ...owned.map(p => p.id),
+  ])];
+
+  return { projectIds, isOwnerOrAdmin: false, isMember: true };
+}
+
+/**
  * Given a projectId, resolve the workspaceId
  */
 export async function getWorkspaceIdFromProject(

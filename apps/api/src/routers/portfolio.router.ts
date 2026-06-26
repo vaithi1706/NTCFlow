@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc.js";
 import { requireFeature } from "../middleware/subscription.js";
+import { getAccessibleProjectIds } from "../middleware/permissions.js";
 
 export const portfolioRouter = router({
   getOverview: protectedProcedure
@@ -9,19 +10,14 @@ export const portfolioRouter = router({
       const userId = ctx.user.userId;
       const { workspaceId } = input;
 
-      // Check membership
-      const wsMember = await ctx.prisma.workspaceMember.findUnique({
-        where: { workspaceId_userId: { workspaceId, userId } },
-        include: { customRole: true },
-      });
-      if (!wsMember) return { projects: [], summary: { totalProjects: 0, totalTasks: 0, completionPercent: 0, overdueTasks: 0 } };
+      // Scope to the user's accessible projects (owners/admins still see everything).
+      const { projectIds, isMember } = await getAccessibleProjectIds(ctx.prisma, userId, workspaceId);
+      if (!isMember) return { projects: [], summary: { totalProjects: 0, totalTasks: 0, completionPercent: 0, overdueTasks: 0 } };
       await requireFeature(workspaceId, "portfolio");
 
-
-      // All workspace members can see all workspace projects in portfolio
       const projects = await ctx.prisma.project.findMany({
         where: {
-          workspaceId,
+          id: { in: projectIds },
           deletedAt: null,
         },
         include: {
@@ -110,17 +106,13 @@ export const portfolioRouter = router({
       const userId = ctx.user.userId;
       const { workspaceId } = input;
 
-      const wsMember = await ctx.prisma.workspaceMember.findUnique({
-        where: { workspaceId_userId: { workspaceId, userId } },
-      });
-      if (!wsMember) return [];
-
+      const { projectIds, isMember } = await getAccessibleProjectIds(ctx.prisma, userId, workspaceId);
+      if (!isMember) return [];
 
       const projects = await ctx.prisma.project.findMany({
         where: {
-          workspaceId,
+          id: { in: projectIds },
           deletedAt: null,
-          
         },
         include: {
           tasks: {
@@ -153,18 +145,15 @@ export const portfolioRouter = router({
       const userId = ctx.user.userId;
       const { workspaceId } = input;
 
-      const wsMember = await ctx.prisma.workspaceMember.findUnique({
-        where: { workspaceId_userId: { workspaceId, userId } },
-      });
-      if (!wsMember) return [];
+      const { projectIds, isMember } = await getAccessibleProjectIds(ctx.prisma, userId, workspaceId);
+      if (!isMember) return [];
 
       const now = new Date();
 
       const projects = await ctx.prisma.project.findMany({
         where: {
-          workspaceId,
+          id: { in: projectIds },
           deletedAt: null,
-          
         },
         include: {
           tasks: {

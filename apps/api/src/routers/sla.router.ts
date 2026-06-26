@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc.js";
+import { getAccessibleProjectIds } from "../middleware/permissions.js";
 
 const priorityEnum = z.enum(["urgent", "high", "medium", "low", "none"]);
 
@@ -102,12 +103,8 @@ export const slaRouter = router({
 
       const priorityMap = new Map(policies.map(p => [p.priority, p]));
 
-      // Get recent tasks (last 30 days) from workspace projects
-      const projects = await ctx.prisma.project.findMany({
-        where: { workspaceId: input.workspaceId, deletedAt: null },
-        select: { id: true },
-      });
-      const projectIds = projects.map(p => p.id);
+      // Get recent tasks (last 30 days) from the caller's accessible projects only.
+      const { projectIds } = await getAccessibleProjectIds(ctx.prisma, ctx.user.userId, input.workspaceId);
 
       const tasks = await ctx.prisma.task.findMany({
         where: {

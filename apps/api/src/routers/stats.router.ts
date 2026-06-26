@@ -1,16 +1,14 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc.js";
-import { requirePermission, getWorkspaceIdFromProject , requireProjectAccess } from "../middleware/permissions.js";
+import { requirePermission, getWorkspaceIdFromProject , requireProjectAccess, getAccessibleProjectIds } from "../middleware/permissions.js";
 
 export const statsRouter = router({
   workspaceOverview: protectedProcedure
     .input(z.object({ workspaceId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.userId;
-      const wsMember = await ctx.prisma.workspaceMember.findUnique({
-        where: { workspaceId_userId: { workspaceId: input.workspaceId, userId } },
-      });
-      if (!wsMember) throw new Error("Not a workspace member");
+      const { projectIds, isMember } = await getAccessibleProjectIds(ctx.prisma, userId, input.workspaceId);
+      if (!isMember) throw new Error("Not a workspace member");
 
       const now = new Date();
       const startOfWeek = new Date(now);
@@ -19,11 +17,6 @@ export const statsRouter = router({
 
       const todayStart = new Date(now);
       todayStart.setHours(0, 0, 0, 0);
-
-      const projectIds = (await ctx.prisma.project.findMany({
-        where: { workspaceId: input.workspaceId, deletedAt: null },
-        select: { id: true },
-      })).map(p => p.id);
 
       const baseWhere = { projectId: { in: projectIds }, deletedAt: null };
 
