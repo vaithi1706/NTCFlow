@@ -124,6 +124,8 @@ export default function MatrixPage() {
   const updateMutation = trpc.task.update.useMutation({
     onSuccess: () => {
       utils.task.list.invalidate({ projectId });
+      utils.stats.invalidate();
+      utils.activity.invalidate();
       toast.success("Priority updated");
     },
   });

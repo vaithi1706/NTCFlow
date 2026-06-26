@@ -42,6 +42,8 @@ export function AiSprintPlan({ projectId, backlogTasks, activeSprintId, onAddToS
   const moveMutation = trpc.task.update.useMutation({
     onSuccess: () => {
       utils.task.list.invalidate();
+      utils.stats.invalidate();
+      utils.activity.invalidate();
     },
   });
 

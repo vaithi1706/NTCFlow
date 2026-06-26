@@ -102,6 +102,9 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
     onSuccess: () => {
       onUpdated?.();
       utils.task.getById.invalidate({ id: task?.id! });
+      // Status / due date / assignee changes affect home-page dashboard counts.
+      utils.stats.invalidate();
+      utils.activity.invalidate();
       toast.success("Task updated");
     },
   });
@@ -110,6 +113,9 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
     onSuccess: () => {
       onUpdated?.();
       onClose();
+      // Total task counts changed.
+      utils.stats.invalidate();
+      utils.activity.invalidate();
       toast.success("Task deleted");
     },
     onError: (err) => toast.error(err.message),

@@ -52,6 +52,8 @@ export default function BacklogPage() {
   const createMutation = trpc.task.create.useMutation({
     onSuccess: () => {
       utils.task.getBacklog.invalidate({ projectId });
+      utils.stats.invalidate();
+      utils.activity.invalidate();
       setNewTitle("");
       setAddingBacklog(false);
     },
@@ -61,6 +63,8 @@ export default function BacklogPage() {
     onSuccess: () => {
       utils.task.getBacklog.invalidate({ projectId });
       utils.sprint.list.invalidate({ projectId });
+      utils.stats.invalidate();
+      utils.activity.invalidate();
       setSelectedIds([]);
     },
   });
@@ -69,6 +73,8 @@ export default function BacklogPage() {
     onSuccess: () => {
       utils.task.getBacklog.invalidate({ projectId });
       utils.sprint.list.invalidate({ projectId });
+      utils.stats.invalidate();
+      utils.activity.invalidate();
     },
   });
 

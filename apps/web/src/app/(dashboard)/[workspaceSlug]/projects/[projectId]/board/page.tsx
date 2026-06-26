@@ -49,7 +49,13 @@ export default function BoardPage() {
   );
 
   const utils = trpc.useUtils();
-  const refetchBoard = () => utils.board.getColumns.invalidate({ projectId });
+  const refetchBoard = () => {
+    utils.board.getColumns.invalidate({ projectId });
+    // Dashboard stats and activity feed depend on task counts/status -- refresh them
+    // so the home page Overdue / Completed widgets reflect this change immediately.
+    utils.stats.invalidate();
+    utils.activity.invalidate();
+  };
 
   const moveMutation = trpc.task.move.useMutation({
     onSuccess: () => refetchBoard(),

@@ -26,8 +26,13 @@ const priorities: { value: Priority; label: string }[] = [
 ];
 
 export function BulkActionBar({ selectedIds, columns, onClear, onDone }: BulkActionBarProps) {
+  const utils = trpc.useUtils();
+
   const bulkUpdateMutation = trpc.task.bulkUpdate.useMutation({
     onSuccess: (_, vars) => {
+      // Bulk status / priority / due-date changes ripple into dashboard counts.
+      utils.stats.invalidate();
+      utils.activity.invalidate();
       toast.success(`Updated ${selectedIds.length} tasks`);
       onDone();
     },
@@ -36,6 +41,8 @@ export function BulkActionBar({ selectedIds, columns, onClear, onDone }: BulkAct
 
   const bulkDeleteMutation = trpc.task.bulkDelete.useMutation({
     onSuccess: () => {
+      utils.stats.invalidate();
+      utils.activity.invalidate();
       toast.success(`Deleted ${selectedIds.length} tasks`);
       onDone();
     },
