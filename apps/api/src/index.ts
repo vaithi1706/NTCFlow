@@ -24,9 +24,26 @@ const app = express();
 app.set("trust proxy", 1);
 const PORT = parseInt(process.env.PORT || "4000", 10);
 
+// Allowed CORS origins. The built-in defaults cover the original prod domains
+// + local dev. Per-deployment extras come from the EXTRA_CORS_ORIGINS env var
+// (comma-separated). So a deploy on a new IP/domain just needs e.g.
+//
+//   EXTRA_CORS_ORIGINS=http://3.221.48.192:3100,http://3.221.48.192:4100
+//
+// in apps/api/.env -- no code change required.
+const DEFAULT_CORS_ORIGINS = [
+  "https://dkflow.in",
+  "https://www.dkflow.in",
+  "https://admin.dkflow.in:8443",
+  "http://localhost:3000",
+];
+const EXTRA_CORS_ORIGINS = (process.env.EXTRA_CORS_ORIGINS || "")
+  .split(",").map(o => o.trim()).filter(Boolean);
+const CORS_ORIGINS = [...DEFAULT_CORS_ORIGINS, ...EXTRA_CORS_ORIGINS];
+
 // Security & parsing
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: ["https://dkflow.in", "https://www.dkflow.in", "https://admin.dkflow.in:8443", "http://localhost:3000"], credentials: true }));
+app.use(cors({ origin: CORS_ORIGINS, credentials: true }));
 app.use(compression());
 app.use(morgan("combined", { stream: { write: (message: string) => logger.info(message.trim()) } }));
 app.use(express.json({ limit: "10mb" }));
@@ -435,7 +452,7 @@ const server = http.createServer(app);
 
 // Socket.IO
 const io = new SocketIOServer(server, {
-  cors: { origin: ["https://dkflow.in", "https://www.dkflow.in", "https://admin.dkflow.in:8443", "http://localhost:3000"], credentials: true },
+  cors: { origin: CORS_ORIGINS, credentials: true },
   path: "/api/socket.io",
 });
 
