@@ -28,8 +28,8 @@ export const portfolioRouter = router({
             select: { id: true, status: true, dueDate: true },
           },
           sprints: {
-            where: { status: "active" },
-            select: { id: true, name: true, startDate: true, endDate: true, sprintTasks: { select: { taskId: true } } },
+            where: { isActive: true },
+            select: { id: true, name: true, startDate: true, endDate: true, tasks: { select: { taskId: true } } },
             take: 1,
           },
           activities: {
@@ -81,7 +81,7 @@ export const portfolioRouter = router({
             name: activeSprint.name,
             startDate: activeSprint.startDate,
             endDate: activeSprint.endDate,
-            taskCount: activeSprint.sprintTasks.length,
+            taskCount: activeSprint.tasks.length,
           } : null,
           lastActivity: p.activities[0]?.createdAt || p.updatedAt,
           createdAt: p.createdAt,
