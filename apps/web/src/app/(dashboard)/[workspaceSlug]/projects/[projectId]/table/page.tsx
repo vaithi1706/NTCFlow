@@ -209,7 +209,7 @@ export default function TablePage() {
                         <AssigneePicker taskId={task.id} assignees={task.assignees} workspaceId={project?.workspaceId} onUpdated={refetch} showAssignToMe />
                       </div>
                     )}
-                    {col.key === "dueDate" && task.dueDate && <DueDate date={task.dueDate} compact />}
+                    {col.key === "dueDate" && task.dueDate && <DueDate date={task.dueDate} status={task.status} compact />}
                     {col.key === "labels" && <div className="flex flex-wrap gap-1">{task.labels.slice(0, 2).map((l) => <Badge key={l.id} variant="secondary" className="text-[10px] px-1.5 py-0" style={{ backgroundColor: l.color + "20", color: l.color }}>{l.name}</Badge>)}</div>}
                     {col.key === "createdAt" && <span className="text-xs text-muted-foreground">{format(new Date(task.createdAt), "MMM d, yyyy")}</span>}
                   </div>

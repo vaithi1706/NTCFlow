@@ -522,7 +522,7 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
                   {task.dueDate ? (
                     <div className="flex items-center gap-1">
                       <button onClick={() => setDatePopoverOpen(true)}>
-                        <DueDate date={task.dueDate} />
+                        <DueDate date={task.dueDate} status={task.status} />
                       </button>
                       <Button
                         variant="ghost"

@@ -120,7 +120,7 @@ export function TaskCard({ task, onClick, overlay, workspaceId, onUpdated }: Tas
           </span>
         )}
 
-        {task.dueDate && <DueDate date={task.dueDate} compact />}
+        {task.dueDate && <DueDate date={task.dueDate} status={task.status} compact />}
 
         <SlaIndicator taskId={task.id} compact />
 

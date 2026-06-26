@@ -458,7 +458,7 @@ export default function HomePage() {
                                 )}
                               </div>
                             </div>
-                            {task.dueDate && <DueDate date={task.dueDate} />}
+                            {task.dueDate && <DueDate date={task.dueDate} status={task.status} />}
                             <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover/task:opacity-100 transition-opacity" />
                           </Card>
                         </Link>

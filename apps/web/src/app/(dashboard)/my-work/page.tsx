@@ -175,7 +175,7 @@ function TaskGroup({ title, icon, tasks, project, router, wsSlug }: { title: str
               <Badge variant="outline" className="text-xs" style={{ borderColor: task.columnColor }}>
                 {task.columnName}
               </Badge>
-              {task.dueDate && <DueDate date={task.dueDate} />}
+              {task.dueDate && <DueDate date={task.dueDate} status={task.status} />}
             </div>
           </div>
         ))}

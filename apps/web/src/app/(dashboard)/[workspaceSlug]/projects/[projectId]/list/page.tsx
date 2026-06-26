@@ -161,7 +161,7 @@ export default function ListPage() {
                           <div className="w-24" onClick={(e) => e.stopPropagation()}>
                             <AssigneePicker taskId={task.id} assignees={task.assignees} workspaceId={project?.workspaceId} onUpdated={refetch} showAssignToMe />
                           </div>
-                          <div className="w-28">{task.dueDate && <DueDate date={task.dueDate} compact />}</div>
+                          <div className="w-28">{task.dueDate && <DueDate date={task.dueDate} status={task.status} compact />}</div>
                           <div className="w-32 flex flex-wrap gap-1">
                             {task.labels.slice(0, 2).map((l) => (
                               <Badge key={l.id} variant="secondary" className="text-[10px] px-1.5 py-0" style={{ backgroundColor: l.color + "20", color: l.color }}>{l.name}</Badge>
