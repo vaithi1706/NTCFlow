@@ -33,20 +33,28 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { UsageBar } from "@/components/shared/usage-bar";
 import { Sparkles, Crown } from "lucide-react";
 
+// Sidebar menu items — each is gated on a permission key (see default-roles.ts).
+// Items without a `permission` are visible to everyone in the workspace.
+// Per-role visibility (default roles):
+//   - Owner / Admin              -> everything
+//   - Project Manager            -> everything except Workspace Settings & Audit Log
+//   - Scrum Master / Product Owner / Business Analyst -> reports-related views, no admin
+//   - Developer / Designer / QA  -> personal views + Goals/Meetings only
+//   - Viewer                     -> read-only personal views
 const navItems = [
   { icon: Home, label: "Home", href: "/home" },
   { icon: Search, label: "Search", href: "/search" },
   { icon: Bell, label: "Notifications", href: "/notifications", badge: true },
   { icon: LayoutGrid, label: "My Work", href: "/my-work" },
-  { icon: Briefcase, label: "Portfolio", href: "/portfolio" },
-  { icon: Users, label: "Members", href: "/members" },
-  { icon: UsersRound, label: "Teams", href: "/teams" },
-  { icon: BarChart3, label: "Workload", href: "/workload" },
-  { icon: Users, label: "Resource Planning", href: "/resource-planning" },
+  { icon: Briefcase, label: "Portfolio", href: "/portfolio", permission: "canViewReports" },
+  { icon: Users, label: "Members", href: "/members", permission: "canManageMembers" },
+  { icon: UsersRound, label: "Teams", href: "/teams", permission: "canManageMembers" },
+  { icon: BarChart3, label: "Workload", href: "/workload", permission: "canViewReports" },
+  { icon: Users, label: "Resource Planning", href: "/resource-planning", permission: "canViewReports" },
   { icon: Target, label: "Goals", href: "/goals" },
   { icon: Video, label: "Meetings", href: "/meetings" },
-  { icon: FileBarChart, label: "Reports", href: "/reports" },
-  { icon: ClipboardCheck, label: "Approvals", href: "/approvals" },
+  { icon: FileBarChart, label: "Reports", href: "/reports", permission: "canViewReports" },
+  { icon: ClipboardCheck, label: "Approvals", href: "/approvals", permission: "canEditAnyTask" },
   { icon: Settings, label: "Workspace Settings", href: "/workspace-settings", permission: "canAccessSettings" },
   { icon: Shield, label: "Audit Log", href: "/audit-log", permission: "canAccessSettings" },
 ];
