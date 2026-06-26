@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc.js";
 import { TRPCError } from "@trpc/server";
+import { checkPermission } from "../middleware/permissions.js";
 
 const ReportTypeEnum = z.enum([
   "task_summary",
@@ -12,6 +13,7 @@ const ReportTypeEnum = z.enum([
   "completion_trend",
   "overdue_tasks",
   "member_performance",
+  "person_activity",
   "custom",
 ]);
 
@@ -37,6 +39,9 @@ export const reportRouter = router({
         startDate: z.string().optional(),
         endDate: z.string().optional(),
         groupBy: z.enum(["status", "priority", "assignee", "label", "sprint", "type"]).optional(),
+        // The person_activity report picks a single user; reuse one input
+        // instead of overloading filters.assigneeIds.
+        assigneeId: z.string().uuid().optional(),
         filters: z
           .object({
             assigneeIds: z.array(z.string().uuid()).optional(),
@@ -49,7 +54,7 @@ export const reportRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { workspaceId, projectId, type, dateRange, startDate, endDate, groupBy, filters } = input;
+      const { workspaceId, projectId, type, dateRange, startDate, endDate, groupBy, filters, assigneeId } = input;
 
       // Calculate date range
       const now = new Date();
@@ -429,6 +434,85 @@ export const reportRouter = router({
           };
         }
 
+        case "person_activity": {
+          // Targeted view of one teammate's work in the date range.
+          // Permission: caller can see their own; viewing someone else's
+          // requires canViewReports in the workspace.
+          if (!assigneeId) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "person_activity requires an assigneeId" });
+          }
+          if (assigneeId !== ctx.user.userId) {
+            const ok = await checkPermission(ctx.prisma, ctx.user.userId, workspaceId, "canViewReports");
+            if (!ok) throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed to view this person's report" });
+          }
+
+          const baseWhere = {
+            project: { workspaceId, deletedAt: null, ...(projectId ? { id: projectId } : {}) },
+            deletedAt: null,
+            assignees: { some: { userId: assigneeId } },
+          };
+          const taskSelect = {
+            id: true, taskNumber: true, title: true, status: true, priority: true,
+            dueDate: true, completedAt: true, updatedAt: true,
+            project: { select: { id: true, name: true, color: true, slug: true } },
+          } as const;
+
+          const [user, openTasks, completedTasks, overdueTasks, recentActivity] = await Promise.all([
+            ctx.prisma.user.findUnique({
+              where: { id: assigneeId },
+              select: { id: true, name: true, email: true, avatarUrl: true },
+            }),
+            ctx.prisma.task.findMany({
+              where: { ...baseWhere, status: { notIn: ["done", "cancelled"] } },
+              select: taskSelect, orderBy: { updatedAt: "desc" }, take: 100,
+            }),
+            ctx.prisma.task.findMany({
+              where: { ...baseWhere, status: "done", completedAt: { gte: from, lte: to } },
+              select: taskSelect, orderBy: { completedAt: "desc" }, take: 100,
+            }),
+            ctx.prisma.task.findMany({
+              where: { ...baseWhere, dueDate: { lt: now }, status: { notIn: ["done", "cancelled"] } },
+              select: taskSelect, orderBy: { dueDate: "asc" }, take: 100,
+            }),
+            // Activity timeline -- everything this user did in the date range,
+            // scoped to tasks in the workspace (+ optional project filter).
+            ctx.prisma.taskActivity.findMany({
+              where: {
+                userId: assigneeId,
+                createdAt: { gte: from, lte: to },
+                task: {
+                  project: { workspaceId, deletedAt: null, ...(projectId ? { id: projectId } : {}) },
+                  deletedAt: null,
+                },
+              },
+              select: {
+                id: true, action: true, field: true, oldValue: true, newValue: true, createdAt: true,
+                task: { select: { id: true, taskNumber: true, title: true, project: { select: { id: true, name: true, color: true } } } },
+              },
+              orderBy: { createdAt: "desc" },
+              take: 200,
+            }),
+          ]);
+
+          return {
+            type: "person_activity",
+            dateRange: { from: from.toISOString(), to: to.toISOString() },
+            data: {
+              user,
+              counts: {
+                open: openTasks.length,
+                completed: completedTasks.length,
+                overdue: overdueTasks.length,
+                activityEvents: recentActivity.length,
+              },
+              openTasks,
+              completedTasks,
+              overdueTasks,
+              activity: recentActivity,
+            },
+          };
+        }
+
         default:
           throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown report type" });
       }
@@ -444,10 +528,18 @@ export const reportRouter = router({
         dateRange: DateRangeEnum.default("last_30_days"),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
+        // For person_activity exports the UI passes the picked user.
+        assigneeId: z.string().uuid().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const { workspaceId, projectId, type, dateRange } = input;
+      const { workspaceId, projectId, type, dateRange, assigneeId } = input;
+
+      // person_activity exports require permission to view that user (or be them).
+      if (type === "person_activity" && assigneeId && assigneeId !== ctx.user.userId) {
+        const ok = await checkPermission(ctx.prisma, ctx.user.userId, workspaceId, "canViewReports");
+        if (!ok) throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed to export this person's report" });
+      }
 
       const now = new Date();
       let from = new Date();
@@ -463,6 +555,10 @@ export const reportRouter = router({
         parentId: null,
       };
       if (projectId) where.projectId = projectId;
+      // person_activity narrows to that user's tasks across the workspace.
+      if (type === "person_activity" && assigneeId) {
+        where.assignees = { some: { userId: assigneeId } };
+      }
 
       const tasks = await ctx.prisma.task.findMany({
         where,

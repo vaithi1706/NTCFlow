@@ -22,6 +22,7 @@ const REPORT_TYPES = [
   { value: "overdue_tasks", label: "Overdue Tasks", icon: AlertTriangle, description: "Tasks past their due date" },
   { value: "member_performance", label: "Member Performance", icon: Users, description: "Performance per team member" },
   { value: "team_workload", label: "Team Workload", icon: Zap, description: "Current workload distribution" },
+  { value: "person_activity", label: "Person Activity", icon: Users, description: "Deep dive on one person -- their open / completed / overdue tasks + activity timeline" },
   { value: "sprint_velocity", label: "Sprint Velocity", icon: TrendingUp, description: "Points completed per sprint" },
   { value: "time_tracking", label: "Time Tracking", icon: Clock, description: "Hours logged by team" },
 ] as const;
@@ -299,6 +300,120 @@ function ReportView({ report }: { report: any }) {
         </div>
       );
 
+    case "person_activity":
+      return (
+        <div className="space-y-4">
+          {/* User header */}
+          <Card className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xl font-semibold">
+                {(report.data.user?.name || "?").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">{report.data.user?.name || "Unknown user"}</h3>
+                <p className="text-xs text-muted-foreground">{report.data.user?.email}</p>
+              </div>
+              <div className="ml-auto grid grid-cols-4 gap-4 text-center">
+                <div><p className="text-2xl font-bold">{report.data.counts.open}</p><p className="text-xs text-muted-foreground">Open</p></div>
+                <div><p className="text-2xl font-bold text-emerald-500">{report.data.counts.completed}</p><p className="text-xs text-muted-foreground">Completed</p></div>
+                <div><p className={`text-2xl font-bold ${report.data.counts.overdue > 0 ? "text-red-500" : ""}`}>{report.data.counts.overdue}</p><p className="text-xs text-muted-foreground">Overdue</p></div>
+                <div><p className="text-2xl font-bold text-blue-500">{report.data.counts.activityEvents}</p><p className="text-xs text-muted-foreground">Activity events</p></div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Task lists */}
+          {[
+            { key: "overdueTasks", title: "Currently overdue", color: "text-red-500", empty: "Nothing overdue." },
+            { key: "openTasks", title: "Open", color: "text-blue-500", empty: "No open tasks." },
+            { key: "completedTasks", title: "Completed in range", color: "text-emerald-500", empty: "No tasks completed in this window." },
+          ].map(({ key, title, color, empty }) => {
+            const list: any[] = report.data[key] || [];
+            return (
+              <Card key={key} className="overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <h4 className={`font-semibold ${color}`}>{title} <span className="text-muted-foreground">({list.length})</span></h4>
+                </div>
+                {list.length === 0 ? (
+                  <p className="p-6 text-sm text-muted-foreground text-center">{empty}</p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 text-xs text-muted-foreground">
+                      <tr>
+                        <th className="text-left p-2.5">Task</th>
+                        <th className="text-left p-2.5">Project</th>
+                        <th className="text-left p-2.5">Status</th>
+                        <th className="text-left p-2.5">Priority</th>
+                        <th className="text-left p-2.5">{key === "completedTasks" ? "Completed" : "Due"}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list.slice(0, 50).map((t: any) => (
+                        <tr key={t.id} className="border-t border-border hover:bg-muted/30">
+                          <td className="p-2.5"><span className="text-muted-foreground mr-2">#{t.taskNumber}</span><span className="text-foreground">{t.title}</span></td>
+                          <td className="p-2.5">
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: t.project.color || "#94A3B8" }} />
+                              {t.project.name}
+                            </span>
+                          </td>
+                          <td className="p-2.5 capitalize text-muted-foreground">{t.status?.replace(/_/g, " ")}</td>
+                          <td className="p-2.5 capitalize text-muted-foreground">{t.priority}</td>
+                          <td className="p-2.5 text-muted-foreground">
+                            {key === "completedTasks" ? (t.completedAt?.split("T")[0] || "—") : (t.dueDate?.split("T")[0] || "—")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </Card>
+            );
+          })}
+
+          {/* Activity timeline */}
+          <Card className="overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h4 className="font-semibold text-foreground">Activity timeline <span className="text-muted-foreground">({report.data.activity?.length || 0})</span></h4>
+              <p className="text-xs text-muted-foreground mt-1">What this person did in the selected window</p>
+            </div>
+            {!report.data.activity || report.data.activity.length === 0 ? (
+              <p className="p-6 text-sm text-muted-foreground text-center">No activity recorded in this window.</p>
+            ) : (
+              <div className="divide-y divide-border max-h-[420px] overflow-y-auto">
+                {report.data.activity.slice(0, 200).map((a: any) => (
+                  <div key={a.id} className="p-3 text-sm flex items-start gap-3">
+                    <span className="h-2 w-2 mt-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.task?.project?.color || "#94A3B8" }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground">
+                        <span className="font-medium capitalize">{a.action?.replace(/_/g, " ")}</span>
+                        {a.field && <span className="text-muted-foreground"> · {a.field}</span>}
+                        {a.task && (
+                          <span className="text-muted-foreground"> on </span>
+                        )}
+                        {a.task && (
+                          <span className="text-foreground">#{a.task.taskNumber} {a.task.title}</span>
+                        )}
+                      </p>
+                      {(a.oldValue || a.newValue) && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {a.oldValue && <span>from <span className="font-mono">{a.oldValue}</span></span>}
+                          {a.oldValue && a.newValue && " → "}
+                          {a.newValue && <span>to <span className="font-mono">{a.newValue}</span></span>}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap">
+                      {new Date(a.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      );
+
     default:
       return <p className="text-muted-foreground">Unknown report type</p>;
   }
@@ -309,11 +424,21 @@ export default function ReportsPage() {
   const [reportType, setReportType] = useState<string>("task_summary");
   const [dateRange, setDateRange] = useState<string>("last_30_days");
   const [projectId, setProjectId] = useState<string>("all");
+  const [assigneeId, setAssigneeId] = useState<string>("");
 
   const { data: projects } = trpc.project.list.useQuery(
     { workspaceId: workspaceId || "" },
     { enabled: !!workspaceId }
   );
+
+  // Members list -- shown for person_activity to pick which person to report on.
+  const { data: members } = trpc.workspace.getMembers.useQuery(
+    { workspaceId: workspaceId || "" },
+    { enabled: !!workspaceId && reportType === "person_activity" }
+  );
+
+  const isPersonActivity = reportType === "person_activity";
+  const personActivityReady = !isPersonActivity || !!assigneeId;
 
   const { data: report, isLoading } = trpc.report.generate.useQuery(
     {
@@ -321,8 +446,9 @@ export default function ReportsPage() {
       type: reportType as any,
       dateRange: dateRange as any,
       projectId: projectId !== "all" ? projectId : undefined,
+      ...(isPersonActivity && assigneeId ? { assigneeId } : {}),
     },
-    { enabled: !!workspaceId }
+    { enabled: !!workspaceId && personActivityReady }
   );
 
   const { refetch: fetchCsv } = trpc.report.exportCsv.useQuery(
@@ -331,6 +457,7 @@ export default function ReportsPage() {
       type: reportType as any,
       dateRange: dateRange as any,
       projectId: projectId !== "all" ? projectId : undefined,
+      ...(isPersonActivity && assigneeId ? { assigneeId } : {}),
     },
     { enabled: false }
   );
@@ -396,8 +523,23 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
 
+          {isPersonActivity && (
+            <Select value={assigneeId} onValueChange={setAssigneeId}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Pick a person…" />
+              </SelectTrigger>
+              <SelectContent>
+                {(members as any[])?.map((m: any) => (
+                  <SelectItem key={m.user.id} value={m.user.id}>
+                    {m.user.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           <div className="ml-auto">
-            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+            <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!personActivityReady}>
               <Download className="w-4 h-4 mr-1.5" />
               Export CSV
             </Button>
@@ -416,7 +558,12 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {isLoading ? (
+        {isPersonActivity && !assigneeId ? (
+          <Card className="p-12 text-center">
+            <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground">Pick a person from the dropdown above to generate the report.</p>
+          </Card>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           </div>
