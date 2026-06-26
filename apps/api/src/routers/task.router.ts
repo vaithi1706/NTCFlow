@@ -211,7 +211,7 @@ export const taskRouter = router({
         priority: task.priority,
         assigneeIds: task.assignees.map(a => a.user.id),
         labelIds: task.labels.map(l => l.labelId),
-        columnId: task.columnId,
+        columnId: task.columnId ?? undefined,
       }, ctx.user.userId).catch(() => {});
 
       return task;
@@ -280,8 +280,10 @@ export const taskRouter = router({
         changes: Object.keys(updateData),
       }).catch(() => {});
 
-      // Run automation rules on status change
-      if (data.status || data.columnId) {
+      // Run automation rules on status change.
+      // task.update doesn't accept a columnId (use task.move for that), so we
+      // only react to status changes here.
+      if (data.status) {
         runAutomations(ctx.prisma as any, "task_moved_to_column", {
           taskId: task.id,
           projectId: task.projectId,
@@ -291,7 +293,7 @@ export const taskRouter = router({
           priority: task.priority,
           assigneeIds: [],
           labelIds: [],
-          columnId: task.columnId,
+          columnId: task.columnId ?? undefined,
         }, ctx.user.userId).catch(() => {});
       }
 

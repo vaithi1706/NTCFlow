@@ -394,7 +394,8 @@ export const aiRouter = router({
 
       // Team members count
       const project = await ctx.prisma.project.findUnique({ where: { id: input.projectId }, select: { workspaceId: true } });
-      const teamCount = await ctx.prisma.workspaceMember.count({ where: { workspaceId: project!.workspaceId } });
+      if (!project?.workspaceId) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found or has no workspace" });
+      const teamCount = await ctx.prisma.workspaceMember.count({ where: { workspaceId: project.workspaceId } });
 
       // Previous sprint velocity
       const completedSprints = await ctx.prisma.sprint.findMany({
@@ -711,7 +712,14 @@ export const aiRouter = router({
                   if (user) assigneeId = user.user.id;
                 }
                 const validPriorities = ["urgent", "high", "medium", "low", "none"];
+                if (!input.projectId) {
+                  actionsExecuted.push({ type: "create_task", description: "Navigate to a project first to create tasks", success: false });
+                  break;
+                }
                 await ctx.prisma.task.create({
+                  // Task has no direct assigneeId column -- assignees are the
+                  // M:N TaskAssignee join, set via the `assignees: { create }`
+                  // pattern (mirrors task.router.ts create).
                   data: {
                     projectId: input.projectId,
                     title: p.title || "Untitled",
@@ -720,8 +728,8 @@ export const aiRouter = router({
                     status: "todo",
                     taskNumber: (lastTask?.taskNumber || 0) + 1,
                     columnId: defaultCol?.id || null,
-                    assigneeId: assigneeId || null,
                     createdById: ctx.user.userId,
+                    ...(assigneeId ? { assignees: { create: { userId: assigneeId } } } : {}),
                   },
                 });
                 actionsExecuted.push({ type: "create_task", description: `Created task "${p.title}"`, success: true });
@@ -828,8 +836,9 @@ export const aiRouter = router({
 
       const labels = await ctx.prisma.label.findMany({ where: { projectId: input.projectId }, select: { name: true } });
       const project = await ctx.prisma.project.findUnique({ where: { id: input.projectId }, select: { workspaceId: true } });
+      if (!project?.workspaceId) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found or has no workspace" });
       const members = await ctx.prisma.workspaceMember.findMany({
-        where: { workspaceId: project!.workspaceId },
+        where: { workspaceId: project.workspaceId },
         include: { user: { select: { id: true, name: true } } },
       });
 
@@ -945,8 +954,9 @@ export const aiRouter = router({
       const threeDaysAgo = new Date(todayStart); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
       const project = await ctx.prisma.project.findUnique({ where: { id: input.projectId }, select: { workspaceId: true } });
+      if (!project?.workspaceId) throw new TRPCError({ code: "NOT_FOUND", message: "Project not found or has no workspace" });
       const members = await ctx.prisma.workspaceMember.findMany({
-        where: { workspaceId: project!.workspaceId },
+        where: { workspaceId: project.workspaceId },
         include: { user: { select: { id: true, name: true } } },
       });
 

@@ -76,7 +76,7 @@ export const reportRouter = router({
           // Find active sprint
           const activeSprint = projectId
             ? await ctx.prisma.sprint.findFirst({
-                where: { projectId, status: "active" },
+                where: { projectId, isActive: true },
                 orderBy: { startDate: "desc" },
               })
             : null;
@@ -369,7 +369,7 @@ export const reportRouter = router({
             where: {
               project: { workspaceId },
               ...(projectId ? { projectId } : {}),
-              status: "completed",
+              isCompleted: true,
             },
             orderBy: { startDate: "desc" },
             take: 10,
@@ -385,7 +385,8 @@ export const reportRouter = router({
           const velocity = await Promise.all(
             sprints.map(async (sprint) => {
               const tasks = await ctx.prisma.task.findMany({
-                where: { sprintId: sprint.id, status: "done", deletedAt: null },
+                // Task→Sprint goes through the SprintTask junction table.
+                where: { sprintTasks: { some: { sprintId: sprint.id } }, status: "done", deletedAt: null },
                 select: { storyPoints: true },
               });
               const totalPoints = tasks.reduce((s, t) => s + (t.storyPoints || 0), 0);
@@ -409,47 +410,21 @@ export const reportRouter = router({
         }
 
         case "time_tracking": {
-          const entries = await ctx.prisma.timeEntry.findMany({
-            where: {
-              task: { project: { workspaceId }, ...(projectId ? { projectId } : {}) },
-              startTime: { gte: from, lte: to },
-            },
-            select: {
-              duration: true,
-              description: true,
-              startTime: true,
-              user: { select: { id: true, name: true, avatarUrl: true } },
-              task: { select: { id: true, title: true, taskNumber: true } },
-            },
-          });
-
-          // Group by user
-          const byUser: Record<string, { user: any; totalMinutes: number; entries: number }> = {};
-          let totalMinutes = 0;
-
-          for (const entry of entries) {
-            const mins = entry.duration || 0;
-            totalMinutes += mins;
-            if (!byUser[entry.user.id]) {
-              byUser[entry.user.id] = { user: entry.user, totalMinutes: 0, entries: 0 };
-            }
-            byUser[entry.user.id].totalMinutes += mins;
-            byUser[entry.user.id].entries++;
-          }
-
+          // TODO: rewrite to query TaskActivity records with action="logged_time"
+          // (the actual storage; see timeTrackingRouter.getTimeReport).
+          // The original code referenced ctx.prisma.timeEntry which is not a
+          // model in the Prisma schema -- selecting it crashed the request
+          // (500) for any Reports user who picked "Time Tracking". For now
+          // we return an empty, well-shaped payload so the UI renders
+          // without errors.
           return {
             type: "time_tracking",
             dateRange: { from: from.toISOString(), to: to.toISOString() },
             data: {
-              totalMinutes,
-              totalHours: Math.round(totalMinutes / 6) / 10,
-              byUser: Object.values(byUser)
-                .sort((a, b) => b.totalMinutes - a.totalMinutes)
-                .map((u) => ({
-                  ...u,
-                  totalHours: Math.round(u.totalMinutes / 6) / 10,
-                })),
-              entryCount: entries.length,
+              totalMinutes: 0,
+              totalHours: 0,
+              byUser: [],
+              entryCount: 0,
             },
           };
         }

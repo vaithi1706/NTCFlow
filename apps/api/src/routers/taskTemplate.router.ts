@@ -121,11 +121,13 @@ export const taskTemplateRouter = router({
           },
         });
         await ctx.prisma.checklistItem.createMany({
+          // ChecklistItem fields per schema: { content, isChecked, position }.
+          // Older code used title/isCompleted which the model doesn't define.
           data: checklistItems.map((item: any, i: number) => ({
             checklistId: checklist.id,
-            title: typeof item === "string" ? item : item.title || item.text || "Item",
+            content: typeof item === "string" ? item : item.content || item.title || item.text || "Item",
             position: i,
-            isCompleted: false,
+            isChecked: false,
           })),
         });
       }

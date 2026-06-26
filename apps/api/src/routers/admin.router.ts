@@ -311,7 +311,10 @@ export const adminRouter = router({
             select: {
               id: true,
               name: true,
-              identifier: true,
+              // Project model has no `identifier`; closest equivalent is the
+              // URL slug. `taskPrefix` (the e.g. "DK" used in DK-123) is also
+              // available if the consumer wants that instead.
+              slug: true,
               createdAt: true,
               _count: { select: { tasks: true } },
             },
