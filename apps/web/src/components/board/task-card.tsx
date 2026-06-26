@@ -157,6 +157,7 @@ export function TaskCard({ task, onClick, overlay, workspaceId, onUpdated }: Tas
           <AssigneePicker
             taskId={task.id}
             assignees={task.assignees}
+            projectId={task.projectId}
             workspaceId={workspaceId}
             onUpdated={onUpdated}
             compact
@@ -170,6 +171,7 @@ export function TaskCard({ task, onClick, overlay, workspaceId, onUpdated }: Tas
             <AssigneePicker
               taskId={task.id}
               assignees={task.assignees}
+              projectId={task.projectId}
               workspaceId={workspaceId}
               onUpdated={onUpdated}
               compact

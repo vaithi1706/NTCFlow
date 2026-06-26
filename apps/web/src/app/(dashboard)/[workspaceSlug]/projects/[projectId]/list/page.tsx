@@ -159,7 +159,7 @@ export default function ListPage() {
                           <span className="flex-1 text-sm truncate">{task.title}</span>
                           <div className="w-20"><PriorityBadge priority={task.priority} showLabel /></div>
                           <div className="w-24" onClick={(e) => e.stopPropagation()}>
-                            <AssigneePicker taskId={task.id} assignees={task.assignees} workspaceId={project?.workspaceId} onUpdated={refetch} showAssignToMe />
+                            <AssigneePicker taskId={task.id} assignees={task.assignees} projectId={projectId} workspaceId={project?.workspaceId} onUpdated={refetch} showAssignToMe />
                           </div>
                           <div className="w-28">{task.dueDate && <DueDate date={task.dueDate} status={task.status} compact />}</div>
                           <div className="w-32 flex flex-wrap gap-1">

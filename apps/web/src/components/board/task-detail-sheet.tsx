@@ -510,6 +510,7 @@ export function TaskDetailSheet({ task, columns, workspaceId, onClose, onUpdated
               <AssigneePicker
                 taskId={task.id}
                 assignees={task.assignees}
+                projectId={task.projectId}
                 workspaceId={workspaceId}
                 onUpdated={onUpdated}
                 showAssignToMe

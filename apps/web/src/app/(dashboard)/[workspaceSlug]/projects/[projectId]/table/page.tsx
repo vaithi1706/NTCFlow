@@ -206,7 +206,7 @@ export default function TablePage() {
                     {col.key === "priority" && <PriorityBadge priority={task.priority} showLabel />}
                     {col.key === "assignee" && (
                       <div onClick={(e) => e.stopPropagation()}>
-                        <AssigneePicker taskId={task.id} assignees={task.assignees} workspaceId={project?.workspaceId} onUpdated={refetch} showAssignToMe />
+                        <AssigneePicker taskId={task.id} assignees={task.assignees} projectId={projectId} workspaceId={project?.workspaceId} onUpdated={refetch} showAssignToMe />
                       </div>
                     )}
                     {col.key === "dueDate" && task.dueDate && <DueDate date={task.dueDate} status={task.status} compact />}

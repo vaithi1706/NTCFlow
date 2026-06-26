@@ -13,6 +13,13 @@ import { Button } from "@/components/ui/button";
 interface AssigneePickerProps {
   taskId: string;
   assignees: Array<{ id: string; name: string; avatarUrl?: string | null }>;
+  /**
+   * Project the task belongs to. When provided (preferred), the picker lists
+   * only members of THIS project. Without it, the picker falls back to all
+   * workspace members -- which is the legacy behavior and tends to over-show
+   * (e.g. workspace owners/admins who were never added to the project).
+   */
+  projectId?: string;
   workspaceId?: string;
   onUpdated?: () => void;
   compact?: boolean;
@@ -20,14 +27,21 @@ interface AssigneePickerProps {
   children?: React.ReactNode; // custom trigger
 }
 
-export function AssigneePicker({ taskId, assignees, workspaceId, onUpdated, compact, showAssignToMe = true, children }: AssigneePickerProps) {
+export function AssigneePicker({ taskId, assignees, projectId, workspaceId, onUpdated, compact, showAssignToMe = true, children }: AssigneePickerProps) {
   const [open, setOpen] = useState(false);
   const { user } = useAuthStore();
 
-  const { data: members } = trpc.workspace.getMembers.useQuery(
-    { workspaceId: workspaceId! },
-    { enabled: !!workspaceId && open }
+  // Prefer project membership when we know the project; only fall back to
+  // workspace-wide members if a caller didn't pass projectId.
+  const projectMembersQuery = trpc.project.getMembers.useQuery(
+    { projectId: projectId! },
+    { enabled: !!projectId && open }
   );
+  const workspaceMembersQuery = trpc.workspace.getMembers.useQuery(
+    { workspaceId: workspaceId! },
+    { enabled: !projectId && !!workspaceId && open }
+  );
+  const members = projectId ? projectMembersQuery.data : workspaceMembersQuery.data;
 
   const toggleMutation = trpc.task.toggleAssignee.useMutation({
     onSuccess: (result) => {
