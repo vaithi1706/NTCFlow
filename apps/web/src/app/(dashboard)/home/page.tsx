@@ -175,10 +175,10 @@ export default function HomePage() {
   ];
 
   const statCards = [
-    { label: "Total Tasks", value: stats?.totalTasks ?? "—", icon: ListTodo, color: "from-blue-500/20 to-blue-600/5", iconColor: "text-blue-400" },
-    { label: "Completed This Week", value: stats?.completedThisWeek ?? "—", icon: CheckCircle2, color: "from-emerald-500/20 to-emerald-600/5", iconColor: "text-emerald-400" },
-    { label: "Overdue Tasks", value: stats?.overdueTasks ?? "—", icon: AlertTriangle, color: (stats?.overdueTasks ?? 0) > 0 ? "from-red-500/20 to-red-600/5" : "from-orange-500/20 to-orange-600/5", iconColor: (stats?.overdueTasks ?? 0) > 0 ? "text-red-400" : "text-orange-400", accent: (stats?.overdueTasks ?? 0) > 0 },
-    { label: "Active Sprints", value: stats?.activeSprints ?? "—", icon: Zap, color: "from-violet-500/20 to-violet-600/5", iconColor: "text-violet-400" },
+    { label: "My Open Tasks", value: stats?.totalTasks ?? "—", icon: ListTodo, color: "from-blue-500/20 to-blue-600/5", iconColor: "text-blue-400" },
+    { label: "I Completed This Week", value: stats?.completedThisWeek ?? "—", icon: CheckCircle2, color: "from-emerald-500/20 to-emerald-600/5", iconColor: "text-emerald-400" },
+    { label: "My Overdue", value: stats?.overdueTasks ?? "—", icon: AlertTriangle, color: (stats?.overdueTasks ?? 0) > 0 ? "from-red-500/20 to-red-600/5" : "from-orange-500/20 to-orange-600/5", iconColor: (stats?.overdueTasks ?? 0) > 0 ? "text-red-400" : "text-orange-400", accent: (stats?.overdueTasks ?? 0) > 0 },
+    { label: "My Active Sprints", value: stats?.activeSprints ?? "—", icon: Zap, color: "from-violet-500/20 to-violet-600/5", iconColor: "text-violet-400" },
   ];
 
   return (

@@ -18,18 +18,35 @@ export const statsRouter = router({
       const todayStart = new Date(now);
       todayStart.setHours(0, 0, 0, 0);
 
-      const baseWhere = { projectId: { in: projectIds }, deletedAt: null };
+      // The home dashboard is personal: every count is filtered to tasks
+      // assigned to the caller. Project/workspace-wide views live on the
+      // Project Overview page and the Portfolio page.
+      const mine = { assignees: { some: { userId } } };
+      const baseWhere = { projectId: { in: projectIds }, deletedAt: null, ...mine };
 
-      const [totalTasks, completedThisWeek, completedToday, overdueTasks, activeSprints, myTasks] = await Promise.all([
-        ctx.prisma.task.count({ where: baseWhere }),
+      const [totalTasks, completedThisWeek, completedToday, overdueTasks, activeSprints] = await Promise.all([
+        // My open tasks (active, not done/cancelled).
+        ctx.prisma.task.count({ where: { ...baseWhere, status: { notIn: ["done", "cancelled"] } } }),
+        // My done tasks completed this week.
         ctx.prisma.task.count({ where: { ...baseWhere, status: "done", completedAt: { gte: startOfWeek } } }),
+        // My done tasks completed today.
         ctx.prisma.task.count({ where: { ...baseWhere, status: "done", completedAt: { gte: todayStart } } }),
+        // My overdue active tasks.
         ctx.prisma.task.count({ where: { ...baseWhere, dueDate: { lt: now }, status: { notIn: ["done", "cancelled"] } } }),
-        ctx.prisma.sprint.count({ where: { projectId: { in: projectIds }, isActive: true } }),
-        ctx.prisma.task.count({ where: { ...baseWhere, assignees: { some: { userId } }, status: { notIn: ["done", "cancelled"] } } }),
+        // Active sprints that include at least one task assigned to me.
+        ctx.prisma.sprint.count({
+          where: {
+            projectId: { in: projectIds },
+            isActive: true,
+            tasks: { some: { task: mine } },
+          },
+        }),
       ]);
 
-      return { totalTasks, completedThisWeek, completedToday, overdueTasks, activeSprints, myTasks };
+      // `myTasks` kept as an alias for the home header text ("X tasks
+      // assigned to you") -- same value as totalTasks now that totals are
+      // personal.
+      return { totalTasks, completedThisWeek, completedToday, overdueTasks, activeSprints, myTasks: totalTasks };
     }),
 
   projectOverview: protectedProcedure
